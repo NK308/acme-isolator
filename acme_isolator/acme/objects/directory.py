@@ -1,9 +1,9 @@
-import json
+from .base import ACME_Object
 from dataclasses import dataclass, InitVar, field
 
 
-@dataclass(frozen=True, order=False, kw_only=True)
-class ACME_Directory:
+@dataclass(order=False, kw_only=True)
+class ACME_Directory(ACME_Object):
     newNonce: str
     newAccount: str
     newOrder: str
@@ -11,13 +11,8 @@ class ACME_Directory:
     revoceCert: str
     keyChange: str
     website: str
+    meta: InitVar[dict]
 
-    @staticmethod
-    def __make_directory(response: dict) -> "ACME_Directory":
-        website = response["meta"]["website"]
-        del response["meta"]
-        return ACME_Directory(website=website, **response)
+    def __post_init__(self, meta):
+        self.website = meta["website"]
 
-    @staticmethod
-    def decode_directory(response: str) -> "ACME_Directory":
-        return json.loads(response, object_hook=ACME_Directory.__make_directory)
