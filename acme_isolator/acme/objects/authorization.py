@@ -12,6 +12,7 @@ class ACME_Authorization(ACME_Object):
     expires: str|None
     challenges: list[ACME_Challenge] | list[dict]
     wildcard: bool|None
+    url: str
 
     def __post_init__(self, identifier):
         self. identifier = ACME_Identifier.parse(identifier)
