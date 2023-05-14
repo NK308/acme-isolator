@@ -1,0 +1,3 @@
+_USER_AGENT = "acme-isolator"
+_AGENT_VERSION = "0.1"
+USER_AGENT = f"{_USER_AGENT}/{_AGENT_VERSION}"
