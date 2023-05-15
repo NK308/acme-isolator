@@ -1,4 +1,4 @@
-from asyncio import Queue, QueueEmpty, Task, create_task, current_task, CancelledError, gather, wait
+from asyncio import Queue, QueueEmpty, Task, create_task, current_task, CancelledError, gather
 from aiohttp import ClientSession
 from .constants import USER_AGENT
 from urllib.parse import urlparse
@@ -34,7 +34,7 @@ class NonceManager:
 
     async def _fetch_nonce(self):
         try:
-            async with self.session.get(self.url) as resp:
+            async with self.session.head(self.url) as resp:
                 if resp.status == 200:
                     self.queue.put_nowait(resp.headers.get("Replay-Nonce"))
                 else:
