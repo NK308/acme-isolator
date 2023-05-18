@@ -6,7 +6,6 @@ from .order import ACME_Orders
 @dataclass(order=False, kw_only=True)
 class ACME_Account(ACME_Object):
     status: str
-    contact: list[str]|None
-    termsOfServiceAgreed: bool|None
-    orders: str|ACME_Orders
-    url: str
+    contact: list[str] | None
+    termsOfServiceAgreed: bool | None
+    orders: str | ACME_Orders

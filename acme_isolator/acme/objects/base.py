@@ -5,6 +5,8 @@ from dataclasses import dataclass, fields
 
 @dataclass(order=False, kw_only=True)
 class ACME_Object(ABC):
+    url: str
+    parent: "ACME_Object" | None
 
     @classmethod
     def _make_object(cls, response: dict):

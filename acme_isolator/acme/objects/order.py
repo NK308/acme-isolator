@@ -11,13 +11,12 @@ class ACME_Order(ACME_Object):
     expires: str
     identifier: ACME_Identifier = field(init=False)
     identifier: InitVar[dict]
-    notBefore: str|None
-    notAfter: str|None
-    error: dict|None
-    authorizations: list[str]|list[ACME_Authorization]
+    notBefore: str | None
+    notAfter: str | None
+    error: dict | None
+    authorizations: list[str] | list[ACME_Authorization]
     finalize: str
-    certificate: str|None
-    url: str
+    certificate: str | None
 
     def __post_init__(self, identifier: dict):
         self.identifier = ACME_Identifier.parse(identifier)
@@ -25,8 +24,7 @@ class ACME_Order(ACME_Object):
 
 @dataclass(order=False, kw_only=True)
 class ACME_Orders(ACME_Object, Sequence):
-    orders: list[str]|list[ACME_Order]
-    url: str
+    orders: list[str] | list[ACME_Order]
 
     def __getitem__(self, i):
         return self.orders[i]
