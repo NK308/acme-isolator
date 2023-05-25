@@ -35,7 +35,7 @@ class JwsBase(ABC):
 
     @abstractmethod
     def create_headers(self):
-        pass
+        return {"alg": self.alg, "nonce": self.nonce, "url": self.url}
 
 
 @dataclass(kw_only=True)
@@ -49,7 +49,9 @@ class JwsJwk(JwsBase):
         self.jwk["y"] = urlsafe_b64encode(numbers.y.to_bytes(32, "big", signed=False))
 
     def create_headers(self):
-        return {"alg": self.alg, "nonce": self.nonce, "jwk": self.jwk}
+        header = super().create_headers()
+        header["jwk"] = self.jwk
+        return header
 
 
 @dataclass(kw_only=True)
@@ -57,4 +59,6 @@ class JwsKid(JwsBase):
     kid: str = field(init=True, default=None)
 
     def create_headers(self):
-        return {"alg": self.alg, "nonce": self.nonce, "kid": self.kid}
+        header = super().create_headers()
+        header["kid"] = self.kid
+        return header
