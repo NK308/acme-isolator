@@ -12,15 +12,13 @@ class NonceManager:
     initialized: bool = False
     loop: Task
 
-    def __init__(self, url: str):
+    def __init__(self, url: str, session: ClientSession):
         self.url = url
+        self.session = session
         self.queue = Queue()
         self.tasks = set()
 
     async def __aenter__(self):
-        parsed = urlparse(self.url)
-        self.session = ClientSession(base_url=f"{parsed.scheme}://{parsed.netloc}", headers = {"User-Agent": USER_AGENT})
-        await self.session.__aenter__()
         self.initialized = True
         self.loop = create_task(self.refill_loop())
         return self
@@ -30,7 +28,6 @@ class NonceManager:
             task.cancel()
         await gather(*self.tasks)
         self.initialized = False
-        return await self.session.__aexit__(exc_type, exc_val,exc_tb)
 
     async def _fetch_nonce(self):
         try:
