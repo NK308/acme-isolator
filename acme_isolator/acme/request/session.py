@@ -31,3 +31,22 @@ class Session:
         locations = {k: f"https://{urlparse(v).netloc}" for (k, v) in self.directory}
         self.sessions = {location: ClientSession(base_url=location, headers={"User-Agent": USER_AGENT}) for location in set(locations)}
         self.resource_sessions = {k: self.sessions[url] for (k, url) in locations}
+
+    async def check_session(self, url: str) -> ClientSession:
+        location = f"https://{urlparse(url).netloc}"
+        if location in self.sessions.keys():
+            return self.sessions[location]
+        else:
+            new_session = ClientSession(base_url=location, headers={"User-Agent": USER_AGENT})
+            await new_session.__aenter__()
+            self.sessions[location] = new_session
+            return new_session
+
+    async def post(self, url: str, payload: dict | bytes) -> tuple[dict, int]:
+        session = await self.check_session(url)
+        async with session.post(url=url, data=payload) as resp:
+            data = await resp.json()
+            status = resp.status
+            new_nonce = resp.headers["Replay-Nonce"]
+            self.nonce_pool.put_nonce(new_nonce)
+            return data, status
