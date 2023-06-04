@@ -13,7 +13,7 @@ class JwsBase(ABC):
     nonce: str
     url: str
     key: EllipticCurvePrivateKey
-    payload: dict|bytes = field(default_factory=dict)
+    payload: dict | bytes | None = None
     alg: str = "ES256"
 
     @staticmethod
@@ -22,7 +22,10 @@ class JwsBase(ABC):
 
     def build(self) -> bytes:
         header = self._encode(dumps(self.create_headers()).encode("utf-8"))
-        payload = self._encode(self.create_payload())
+        if self.payload is None:
+            payload = ""
+        else:
+            payload = self._encode(self.create_payload())
         serialized = ".".join([header, payload]).encode("ascii")
         signature = self.key.sign(serialized, ECDSA(SHA256()))
         return dumps({"protected": header, "payload": payload, "signature": signature}).encode("ascii")
