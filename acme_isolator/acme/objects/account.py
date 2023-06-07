@@ -8,12 +8,30 @@ from ..request import JwsKid, JwsJwk
 
 @dataclass(order=False, kw_only=True)
 class ACME_Account(ACME_Object):
+    key: EllipticCurvePrivateKey
+    session: Session
     status: str
     contact: list[str] | None
     termsOfServiceAgreed: bool | None
     orders: str | ACME_Orders
-    resources: dict[str, str]
     parent: None = field(default=None, init=False)
+
+    async def request(self, url: str, payload: dict | None):
+        nonce = await self.session.nonce_pool.get_nonce()
+        request_builder = JwsKid(kid=self.url, key=self.key, payload=payload, nonce=nonce, url=url)
+        return await self.session.post(url, payload=request_builder.build())
+
+    async def fetch_orders(self):
+        if type(self.orders) == str:
+            url = self.orders
+            data, status = await self.request(url, None)
+            if status == 200:
+                self.orders = ACME_Orders(url=url, parent=self, **data)
+            else:
+                raise ConnectionError(f"Server returned status code {status} while fetching orders from {url}.")
+        elif type(self.orders) == ACME_Orders:
+            await self.orders.update_list()
+        await self.orders.update_orders()
 
     @classmethod
     async def create_from_key(cls, session: Session, key: EllipticCurvePrivateKey, contact: list[str]):
@@ -26,8 +44,7 @@ class ACME_Account(ACME_Object):
             data = await resp.json()
             new_nonce = resp.headers["Replay-Nonce"]
             session.nonce_pool.put_nonce(new_nonce)
-            return ACME_Account(**data)
-
+            return ACME_Account(key=key, session=session, **data)
 
     @classmethod
     async def get_from_key(cls, session: Session, key: EllipticCurvePrivateKey):
@@ -40,4 +57,4 @@ class ACME_Account(ACME_Object):
             data = await resp.json()
             new_nonce = resp.headers["Replay-Nonce"]
             session.nonce_pool.put_nonce(new_nonce)
-            return ACME_Account(**data)
+            return ACME_Account(key=key, session=session, **data)
