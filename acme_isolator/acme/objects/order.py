@@ -26,6 +26,13 @@ class ACME_Order(ACME_Object):
         data, status = await self.parent.parent.request(self.url, None)
         if status == 200:
             for key, value in data.items():
+                if key == "status":
+                    self.status = value
+                elif key == "finalize":
+                    self.finalize = value
+                elif key == "certificate":
+                    self.certificate = value
+
 
     @classmethod
     async def get_from_url(cls, order_list: "ACME_Orders", url: str):
