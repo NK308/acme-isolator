@@ -30,7 +30,7 @@ class ACME_Account(ACME_Object):
             else:
                 raise ConnectionError(f"Server returned status code {status} while fetching orders from {url}.")
         elif type(self.orders) == ACME_Orders:
-            await self.orders.update_list()
+            await self.orders.update()
         await self.orders.update_orders()
 
     @classmethod

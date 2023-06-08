@@ -56,26 +56,11 @@ class ACME_Orders(ACME_Object, Sequence):
     def __iter__(self):
         return self.orders.__iter__()
 
-    async def update_list(self):
+    async def update(self):
         data, status = await self.parent.request(self.url, None)
         if status == 200:
             new_list = data["orders"]
-            for entry in new_list:  # Add new orders to list
-                if entry in self.orders:
-                    pass
-                elif entry in list(map(lambda order: order.url, filter(lambda obj: type(obj) == ACME_Order, self.orders))):
-                    pass
-                else:
-                    self.orders.append(entry)
-
-            for order in self.orders:  # Remove missing orders from list
-                if type(order) == str:
-                    if order in new_list:
-                        continue
-                elif type(order) == ACME_Order:
-                    if order.url in new_list:
-                        continue
-                self.orders.remove(order)
+            self.orders = self.update_list(self.orders, data["orders"])
         else:
             raise ConnectionError(f"Server returned status code {status} while fetching orders from {self.url}.")
 

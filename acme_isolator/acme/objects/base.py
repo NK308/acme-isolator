@@ -1,6 +1,7 @@
 import json
 from abc import ABC
 from dataclasses import dataclass, fields
+from typing import Self
 
 
 @dataclass(order=False, kw_only=True)
@@ -28,3 +29,19 @@ class ACME_Object(ABC):
             return json.loads(response, object_hook=cls._make_object)
         else:
             raise ValueError(f"Class {cls} must not have an url.")
+
+    def update_list(self, field_list: list[str | Self], update_list: list[str]) -> list[str | Self]:
+        for e in update_list:
+            if e in field_list:
+                continue
+            elif e not in [acme.url for acme in field_list if not type(acme) == str]:
+                field_list.append(e)
+        for e in field_list:
+                if type(e) == str and e in update_list:
+                    continue
+                elif type(e) == str and e not in update_list:
+                    field_list.remove(e)
+                elif e.url not in update_list:
+                    field_list.remove(e)
+        return field_list
+
