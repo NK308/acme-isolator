@@ -30,6 +30,18 @@ class ACME_Object(ABC):
         else:
             raise ValueError(f"Class {cls} must not have an url.")
 
+    @property
+    def account(self):
+        return self.parent.account()
+
+    @classmethod
+    async def get_from_url(cls, parent_object: "ACME_Object", url: str) -> Self:
+        data, status = await parent_object.account.request(url, None)
+        if status == 200 or status == 201:
+            return cls(url=url, parent=parent_object, **data)
+        else:
+            raise ConnectionError(f"Server returned status code {status} while fetching {cls.__name__} from {url}.")
+
     def update_list(self, field_list: list[str | Self], update_list: list[str]) -> list[str | Self]:
         for e in update_list:
             if e in field_list:

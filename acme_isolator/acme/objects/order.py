@@ -34,15 +34,6 @@ class ACME_Order(ACME_Object):
                     self.certificate = value
 
 
-    @classmethod
-    async def get_from_url(cls, order_list: "ACME_Orders", url: str):
-        data, status = await order_list.parent.request(url, None)
-        if status == 200:
-            return ACME_Order(url=url, parent=order_list, **data)
-        else:
-            raise ConnectionError(f"Server returned status code {status} while fetching order from {url}.")
-
-
 @dataclass(order=False, kw_only=True)
 class ACME_Orders(ACME_Object, Sequence):
     orders: list[str | ACME_Order]

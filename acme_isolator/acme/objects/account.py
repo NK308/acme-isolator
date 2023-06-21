@@ -33,6 +33,14 @@ class ACME_Account(ACME_Object):
             await self.orders.update()
         await self.orders.update_orders()
 
+    @property
+    def account(self):
+        return self
+
+    @classmethod
+    async def get_from_url(cls, parent_object: ACME_Object, url: str):
+        raise NotImplementedError("Class ACME_Account has not get_from _url classmethod.")
+
     @classmethod
     async def create_from_key(cls, session: Session, key: EllipticCurvePrivateKey, contact: list[str]):
         payload = {"termsOfServiceAgreed": True, "contact": contact}
