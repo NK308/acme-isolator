@@ -1,13 +1,13 @@
 import json
 from abc import ABC
 from dataclasses import dataclass, fields
-from typing import Self
+from typing import Self, Union
 
 
 @dataclass(order=False, kw_only=True)
 class ACME_Object(ABC):
     url: str
-    parent: "ACME_Object" | None
+    parent: Union["ACME_Object", None]
 
     @classmethod
     def _make_object(cls, response: dict):
