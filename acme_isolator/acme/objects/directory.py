@@ -1,5 +1,5 @@
 from .base import ACME_Object
-from dataclasses import dataclass, InitVar, field
+from dataclasses import dataclass, InitVar, fields, field
 from aiohttp import request
 from ..request.constants import USER_AGENT
 
@@ -9,23 +9,25 @@ class ACME_Directory(ACME_Object):
     newNonce: str
     newAccount: str
     newOrder: str
-    newAuthz: str
-    revoceCert: str
+    revokeCert: str
     keyChange: str
-    website: str
     meta: InitVar[dict]
+    website: str = field(default="")
+    newAuthz: str = None
+    parent: ACME_Object | None = field(default=None)
 
     def __post_init__(self, meta):
         self.website = meta["website"]
 
     def __iter__(self):
-        return {k: v for (k,v) in self.__dict__ if k in {"newNonce", "newAccount", "newOrder", "newAuthz", "revoceCert", "keyChange"}}
+        return {k: v for (k,v) in self.__dict__ if k in {"newNonce", "newAccount", "newOrder", "newAuthz", "revokeCert", "keyChange"}}
 
     @classmethod
-    async def get_directory(cls, directory_url: str):
-        async with request("GET", directory_url, headers={"User-Agent": USER_AGENT}) as resp:
+    async def get_directory(cls, url: str):
+        async with request("GET", url, headers={"User-Agent": USER_AGENT}) as resp:
             resp.raise_for_status()
             j = await resp.json(encoding="utf-8")
-            return cls(**j)
+            class_fields = {f.name for f in fields(cls)}
+            return cls(url=url, **{k: v for k, v in j.items() if k in class_fields or k == "meta"})
 
 
