@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class ACME_Challenge(ABC, ACME_Object):
+class ACME_Challenge(ACME_Object):
     type: str
     status: str
     validated: None | str

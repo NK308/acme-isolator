@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 
 
 @dataclass(order=False, kw_only=True)
-class ACME_Identifier(ABC, ACME_Object):
+class ACME_Identifier(ACME_Object):
     type: str = field(init=False)
     value: str
 
