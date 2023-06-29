@@ -1,5 +1,4 @@
 import pytest
-import aiohttp
 from acme_isolator.acme.objects.directory import ACME_Directory
 directory_resource_json = { # json stolen from the LetsEncrypt staging environment
             "NW9luPYOK8w": "https://community.letsencrypt.org/t/adding-random-entries-to-the-directory/33417",
@@ -43,8 +42,8 @@ def mock_directory_resource(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_directory_parsing(mock_directory_resource):
-    d = await ACME_Directory.get_directory("https://acme-staging-v02.api.letsencrypt.org/directory")
+async def test_directory_parsing(client_request_redirection, create_https_server):
+    d = await ACME_Directory.get_directory("https://localhost/directory")
     assert d.newNonce == directory_resource_json["newNonce"]
     assert d.newAccount == directory_resource_json["newAccount"]
 
