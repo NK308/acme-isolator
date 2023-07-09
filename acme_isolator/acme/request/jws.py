@@ -17,17 +17,21 @@ class JwsBase(ABC):
     alg: str = "ES256"
 
     @staticmethod
-    def _encode(data: bytes) -> str:
+    def _encode_bytes2base64(data: bytes) -> str:
         return urlsafe_b64encode(data).decode("ascii").strip("=")
 
+    @staticmethod
+    def _encode_string2utf8(s: str) -> bytes:
+        return s.encode("utf-8")
+
     def build(self) -> bytes:
-        header = self._encode(dumps(self.create_headers()).encode("utf-8"))
+        header = self._encode_bytes2base64(self._encode_string2utf8(dumps(self.create_headers())))
         if self.payload is None:
             payload = ""
         else:
-            payload = self._encode(self.create_payload())
+            payload = self._encode_bytes2base64(self.create_payload())
         serialized = ".".join([header, payload]).encode("ascii")
-        signature = self.key.sign(serialized, ECDSA(SHA256()))
+        signature = self._encode_bytes2base64(self.key.sign(serialized, ECDSA(SHA256())))
         return dumps({"protected": header, "payload": payload, "signature": signature}).encode("ascii")
 
     def create_payload(self) -> bytes:
@@ -47,9 +51,9 @@ class JwsJwk(JwsBase):
 
     def __post_init__(self):
         numbers = self.key.public_key().public_numbers()
-        self.jwk = dict(crv="P-256")
-        self.jwk["x"] = urlsafe_b64encode(numbers.x.to_bytes(32, "big", signed=False))
-        self.jwk["y"] = urlsafe_b64encode(numbers.y.to_bytes(32, "big", signed=False))
+        self.jwk = dict(crv="P-256", kty="EC")
+        self.jwk["x"] = self._encode_bytes2base64(numbers.x.to_bytes(32, "big", signed=False))
+        self.jwk["y"] = self._encode_bytes2base64(numbers.y.to_bytes(32, "big", signed=False))
 
     def create_headers(self):
         header = super().create_headers()
