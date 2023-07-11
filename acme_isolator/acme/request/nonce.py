@@ -1,4 +1,4 @@
-from asyncio import Queue, QueueEmpty, Task, create_task, current_task, CancelledError, gather
+from asyncio import Queue, QueueEmpty, Task, create_task, current_task, CancelledError, gather, sleep
 from aiohttp import ClientSession
 from .constants import USER_AGENT
 from urllib.parse import urlparse
@@ -24,6 +24,7 @@ class NonceManager:
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
+        self.loop.cancel()
         for task in self.tasks:
             task.cancel()
         await gather(*self.tasks)
@@ -61,3 +62,4 @@ class NonceManager:
         while True:
             if len(self.tasks) == 0 and self.queue.qsize() == 0:
                 await gather(*[self._request_nonce() for _ in range(10)])
+            await sleep(0)
