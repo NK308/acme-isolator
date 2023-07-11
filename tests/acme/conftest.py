@@ -5,6 +5,7 @@ from base64 import urlsafe_b64encode
 from random import randint
 from .server_mocking import *
 from .key_generation import generate_key_pair
+from .staging_fixtures import *
 
 
 @pytest.fixture()
