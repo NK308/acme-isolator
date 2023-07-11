@@ -34,6 +34,7 @@ async def test_directory_parsing(client_request_redirection, create_https_server
     assert d.newAccount == directory_resource_json["newAccount"]
 
 
+@pytest.mark.staging
 @pytest.mark.asyncio
 async def test_directory_fetching():
     d = await ACME_Directory.get_directory("https://acme-staging-v02.api.letsencrypt.org/directory")
