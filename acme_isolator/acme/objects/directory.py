@@ -20,7 +20,7 @@ class ACME_Directory(ACME_Object):
         self.website = meta["website"]
 
     def __iter__(self):
-        return {k: v for (k,v) in self.__dict__ if k in {"newNonce", "newAccount", "newOrder", "newAuthz", "revokeCert", "keyChange"}}
+        return iter({k: v for (k, v) in self.__dict__.items() if k in {"newNonce", "newAccount", "newOrder", "newAuthz", "revokeCert", "keyChange"}}.items())
 
     @classmethod
     async def get_directory(cls, url: str):
