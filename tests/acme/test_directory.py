@@ -27,6 +27,7 @@ def mock_directory_resource(monkeypatch):
     monkeypatch.setattr("aiohttp.request", get_mock_response)
 
 
+@pytest.mark.servermock
 @pytest.mark.asyncio
 async def test_directory_parsing(client_request_redirection, create_https_server):
     d = await ACME_Directory.get_directory("https://localhost/directory")
@@ -41,3 +42,10 @@ async def test_directory_fetching():
     assert d.newNonce == directory_resource_json["newNonce"]
     assert d.newAccount == directory_resource_json["newAccount"]
     assert type(d) == ACME_Directory
+
+
+@pytest.mark.servermock
+@pytest.mark.asyncio
+async def test_directory_parsing(client_request_redirection, create_https_server):
+    d = await ACME_Directory.get_directory("https://localhost/directory")
+    assert set(dict(iter(d)).keys()) == {"newAccount", "newNonce", "newOrder", "renewalInfo", "revokeCert", "keyChange"}
