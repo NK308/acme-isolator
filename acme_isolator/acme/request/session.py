@@ -28,9 +28,9 @@ class Session:
         await gather(*[session.__aexit__(exc_type, exc_val, exc_tb) for session in self.sessions.values()])
 
     async def define_sessions(self):
-        locations = {k: f"https://{urlparse(v).netloc}" for (k, v) in self.directory}
-        self.sessions = {location: ClientSession(base_url=location, headers={"User-Agent": USER_AGENT}) for location in set(locations)}
-        self.resource_sessions = {k: self.sessions[url] for (k, url) in locations}
+        locations: dict[str, str] = {k: f"https://{urlparse(v).netloc}" for (k, v) in self.directory}
+        self.sessions = {location: ClientSession(base_url=location, headers={"User-Agent": USER_AGENT}) for location in set(locations.values())}
+        self.resource_sessions = {k: self.sessions[url] for (k, url) in locations.items()}
 
     async def check_session(self, url: str) -> ClientSession:
         location = f"https://{urlparse(url).netloc}"
