@@ -26,8 +26,13 @@ async def aiosession(event_loop):
         yield s
 
 
+@pytest.fixture
+def staging_api_url():
+    return "https://acme-staging-v02.api.letsencrypt.org/directory"
+
+
 @pytest_asyncio.fixture()
-async def staging_directory(aiosession):
-    resp = await aiosession.get("https://acme-staging-v02.api.letsencrypt.org/directory")
+async def staging_directory(staging_api_url, aiosession):
+    resp = await aiosession.get(staging_api_url)
     async with resp:
         yield await resp.json()
