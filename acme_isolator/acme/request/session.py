@@ -29,7 +29,7 @@ class Session:
 
     async def define_sessions(self):
         locations: dict[str, str] = {k: f"https://{urlparse(v).netloc}" for (k, v) in self.directory}
-        self.sessions = {location: ClientSession(base_url=location, headers={"User-Agent": USER_AGENT}) for location in set(locations.values())}
+        self.sessions = {location: ClientSession(headers={"User-Agent": USER_AGENT}, conn_timeout=15, read_timeout=15) for location in set(locations.values())}
         self.resource_sessions = {k: self.sessions[url] for (k, url) in locations.items()}
 
     async def check_session(self, url: str) -> ClientSession:
