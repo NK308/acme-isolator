@@ -6,6 +6,7 @@ from random import randint
 from .server_mocking import *
 from .key_generation import generate_key_pair
 from .staging_fixtures import *
+from .pebble_fixtures import *
 
 
 @pytest.fixture()
