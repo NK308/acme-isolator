@@ -4,6 +4,7 @@ from .order import ACME_Orders
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 from ..request.session import Session
 from ..request import JwsKid, JwsJwk
+import sys
 
 
 @dataclass(order=False, kw_only=True)
@@ -47,12 +48,17 @@ class ACME_Account(ACME_Object):
         nonce = await session.nonce_pool.get_nonce()
         url = session.directory.newAccount
         req = JwsJwk(payload=payload, nonce=nonce, key=key, url=url).build()
-        async with session.resource_sessions["newAccount"].post(url=url, data=req) as resp:
-            assert resp.status == 201 # Maybe warning, if the account already exists
-            data = await resp.json()
-            new_nonce = resp.headers["Replay-Nonce"]
-            session.nonce_pool.put_nonce(new_nonce)
-            return ACME_Account(key=key, session=session, **data)
+        print(req, file=sys.stderr)
+        async with session.resource_sessions["newAccount"].post(url=url, data=req, headers={"User-Agent": "agent", "Content-Type": "application/jose+json"}) as resp:
+            try:
+                assert resp.status == 201, f"{resp.status} {await resp.json()}" # Maybe warning, if the account already exists
+                data = await resp.json()
+                new_nonce = resp.headers["Replay-Nonce"]
+                session.nonce_pool.put_nonce(new_nonce)
+                return ACME_Account(key=key, session=session, **data)
+            except AssertionError:
+                print(f"Got HTTP status code {resp.status} (201 expected)", file=sys.stderr)
+                print(await resp.json(), file=sys.stderr)
 
     @classmethod
     async def get_from_key(cls, session: Session, key: EllipticCurvePrivateKey):
