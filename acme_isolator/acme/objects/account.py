@@ -1,15 +1,15 @@
 from .base import ACME_Object
 from dataclasses import dataclass, field
 from .order import ACME_Orders
-from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 from ..request.session import Session
 from ..request import JwsKid, JwsJwk
+from jwcrypto.jwk import JWK
 import sys
 
 
 @dataclass(order=False, kw_only=True)
 class ACME_Account(ACME_Object):
-    key: EllipticCurvePrivateKey
+    key: JWK
     session: Session
     status: str
     contact: list[str] | None
@@ -43,7 +43,7 @@ class ACME_Account(ACME_Object):
         raise NotImplementedError("Class ACME_Account has not get_from _url classmethod.")
 
     @classmethod
-    async def create_from_key(cls, session: Session, key: EllipticCurvePrivateKey, contact: list[str]):
+    async def create_from_key(cls, session: Session, key: JWK, contact: list[str]):
         payload = {"termsOfServiceAgreed": True, "contact": contact}
         nonce = await session.nonce_pool.get_nonce()
         url = session.directory.newAccount
@@ -61,7 +61,7 @@ class ACME_Account(ACME_Object):
                 print(await resp.json(), file=sys.stderr)
 
     @classmethod
-    async def get_from_key(cls, session: Session, key: EllipticCurvePrivateKey):
+    async def get_from_key(cls, session: Session, key: JWK):
         payload = {"onlyReturnExisting": True}
         nonce = await session.nonce_pool.get_nonce()
         url = session.directory.newAccount
