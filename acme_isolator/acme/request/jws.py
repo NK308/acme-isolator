@@ -22,12 +22,12 @@ class JwsBase(ABC):
         elif self.payload is None:
             payload = b""
         else:
-            payload = base64url_encode(json_encode(self.payload))
+            payload = json_encode(self.payload)
         self.jws = JWS(payload=payload)
 
     def build(self) -> bytes:
         self.jws.add_signature(self.key, self.alg, protected=self.create_headers())
-        return self.jws.serialize(compact=True).encode("utf-8")
+        return self.jws.serialize(compact=False).encode("utf-8")
 
     @abstractmethod
     def create_headers(self):
