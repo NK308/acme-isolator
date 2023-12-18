@@ -1,6 +1,8 @@
 import pytest
 import pytest_asyncio
 from aiohttp import ClientSession
+from tests.acme.key_generation import generate_key_pair
+from acme_isolator.acme.request.session import Session
 
 directory_resource_json = { # json stolen from the LetsEncrypt staging environment
     "keyChange": "https://acme-staging-v02.api.letsencrypt.org/acme/key-change",
@@ -36,3 +38,15 @@ async def staging_directory(staging_api_url, aiosession):
     resp = await aiosession.get(staging_api_url)
     async with resp:
         yield await resp.json()
+
+
+@pytest_asyncio.fixture()
+async def staging_session_without_account(staging_api_url):
+    async with Session(staging_api_url) as session:
+        yield session
+
+
+@pytest_asyncio.fixture()
+async def staging_session(staging_api_url, generate_key_pair):
+    async with Session(staging_api_url) as session:
+        yield session
