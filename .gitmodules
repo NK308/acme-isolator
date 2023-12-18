@@ -1,0 +1,4 @@
+[submodule "tests/pebble"]
+	path = tests/pebble
+	url = https://github.com/letsencrypt/pebble
+    branch = main
