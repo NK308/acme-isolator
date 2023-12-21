@@ -3,6 +3,7 @@ import pytest
 import json
 from base64 import urlsafe_b64encode
 from random import randint
+from .terminal_redirection_fixtures import *
 from .server_mocking import *
 from .key_generation import generate_key_pair
 from .staging_fixtures import *
