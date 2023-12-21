@@ -1,10 +1,33 @@
 import aiohttp.connector
 import pytest
 import pytest_asyncio
+from .terminal_redirection_fixtures import get_server_tty
+from xprocess import ProcessStarter
 from aiohttp import ClientSession
 from tests.acme.key_generation import generate_key_pair
 from acme_isolator.acme.request.session import Session
 import ssl
+
+
+@pytest.fixture
+async def pebble_process(xprocess, get_server_tty):
+    class PebbleStarter(ProcessStarter):
+        args = ["/usr/bin/go", "run", "./cmd/pebble"] # TODO add option to load custom config file
+        popen_kwargs = {"cwd": "./pebble",
+                        "shell": False,
+                        "stdout": get_server_tty,
+                        "stderr": get_server_tty}
+        terminate_on_interrupt = True
+        pattern = r"Pebble \d+/\d+/\d+ \d+:\d+:\d+ Listening on: .*"
+        timeout = 10
+
+        def startup_check(self):
+            return True # TODO maybe add an actual test
+
+    xprocess.ensure("pebble", PebbleStarter)
+    yield
+
+    xprocess.getinfo("pebble").terminate()
 
 
 @pytest_asyncio.fixture
