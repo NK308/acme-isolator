@@ -11,13 +11,14 @@ class ACME_Directory(ACME_Object):
     newOrder: str
     revokeCert: str
     keyChange: str
-    meta: InitVar[dict]
+    meta: InitVar[dict | None]
     website: str = field(default="")
     newAuthz: str = None
     parent: ACME_Object | None = field(default=None)
 
     def __post_init__(self, meta):
-        self.website = meta["website"]
+        if meta is not None and "website" in meta:
+            self.website = meta["website"]
 
     def __iter__(self):
         return iter({k: v for (k, v) in self.__dict__.items() if k in {"newNonce", "newAccount", "newOrder", "newAuthz", "revokeCert", "keyChange"} and v is not None}.items())

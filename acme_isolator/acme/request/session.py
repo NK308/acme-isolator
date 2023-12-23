@@ -37,14 +37,14 @@ class Session:
         if location in self.sessions.keys():
             return self.sessions[location]
         else:
-            new_session = ClientSession(base_url=location, headers={"User-Agent": USER_AGENT})
+            new_session = ClientSession(base_url=location, headers={"User-Agent": USER_AGENT, "Content-Type": "application/jose+json"})
             await new_session.__aenter__()
             self.sessions[location] = new_session
             return new_session
 
     async def post(self, url: str, payload: dict | bytes) -> tuple[dict, int]:
         session = await self.check_session(url)
-        async with session.post(url=url, data=payload) as resp:
+        async with session.post(url=url, data=payload, headers={"Content-Type": "application/jose.json"}) as resp:
             data = await resp.json()
             status = resp.status
             new_nonce = resp.headers["Replay-Nonce"]
