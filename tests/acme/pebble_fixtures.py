@@ -7,6 +7,12 @@ from aiohttp import ClientSession
 from tests.acme.key_generation import generate_key_pair
 from acme_isolator.acme.request.session import Session
 import ssl
+from pathlib import Path
+
+
+@pytest.fixture
+def pebble_CA() -> Path:
+    return Path("./pebble/test/certs/pebble.minica.pem")
 
 
 @pytest.fixture
@@ -14,10 +20,10 @@ async def pebble_process(xprocess, get_server_tty):
     class PebbleStarter(ProcessStarter):
         args = ["/usr/bin/go", "run", "./cmd/pebble"] # TODO add option to load custom config file
         popen_kwargs = {"cwd": "./pebble",
-                        "shell": False,
-                        "stdout": get_server_tty,
-                        "stderr": get_server_tty}
-        terminate_on_interrupt = True
+                        # "stdout": get_server_tty,
+                        # "stderr": get_server_tty,
+                        "shell": False }
+        terminate_on_interrupt = False
         pattern = r"Pebble \d+/\d+/\d+ \d+:\d+:\d+ Listening on: .*"
         timeout = 10
 
@@ -43,9 +49,9 @@ def pebble_api_url() -> str:
 
 
 @pytest.fixture
-def pebble_ssl_context() -> ssl.SSLContext:
+def pebble_ssl_context(pebble_CA) -> ssl.SSLContext:
     ssl_ctx = ssl.create_default_context()
-    ssl_ctx.load_verify_locations("/home/nk/git/pebble/test/certs/pebble.minica.pem")
+    ssl_ctx.load_verify_locations(pebble_CA)
     return ssl_ctx
 
 
