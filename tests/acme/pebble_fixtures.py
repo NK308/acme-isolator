@@ -16,7 +16,7 @@ def pebble_CA() -> Path:
 
 
 @pytest.fixture
-async def pebble_process(xprocess, get_server_tty):
+def pebble_process(xprocess, get_server_tty):
     class PebbleStarter(ProcessStarter):
         args = ["/usr/bin/go", "run", "./cmd/pebble"] # TODO add option to load custom config file
         popen_kwargs = {"cwd": "./pebble",
