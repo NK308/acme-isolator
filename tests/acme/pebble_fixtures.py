@@ -16,13 +16,11 @@ def pebble_CA() -> Path:
 
 
 @pytest.fixture
-def pebble_process(xprocess, get_server_tty):
+def pebble_process(xprocess):
     class PebbleStarter(ProcessStarter):
         args = ["/usr/bin/go", "run", "./cmd/pebble"] # TODO add option to load custom config file
         popen_kwargs = {"cwd": "./pebble",
-                        # "stdout": get_server_tty,
-                        # "stderr": get_server_tty,
-                        "shell": False }
+                        "shell": False}
         terminate_on_interrupt = False
         pattern = r"Pebble \d+/\d+/\d+ \d+:\d+:\d+ Listening on: .*"
         timeout = 10
