@@ -1,22 +1,25 @@
 import pytest
+import pytest_asyncio
 from aiohttp import ClientSession
 
 from acme_isolator.acme.request.nonce import NonceManager
 import asyncio
 
 
-@pytest.mark.staging
+pytest_asyncio.fixture(autouse=True)
+async def auto_loop(event_loop):
+    return event_loop
+
 @pytest.mark.asyncio
-async def test_nonce_constructor(aiosession, staging_directory):
-    url = staging_directory["newNonce"]
+async def test_nonce_constructor(aiosession, pebble_directory):
+    url = pebble_directory.newNonce
     nonceManager = NonceManager(url=url, session=aiosession)
 
 
-@pytest.mark.staging
 @pytest.mark.asyncio
-async def test_nonce_fetch(aiosession, staging_directory, event_loop):
+async def test_nonce_fetch(aiosession, pebble_directory, event_loop):
     asyncio.set_event_loop(event_loop)
-    url = staging_directory["newNonce"]
+    url = pebble_directory.newNonce
     nonceManager = NonceManager(url=url, session=aiosession)
     task = asyncio.create_task(nonceManager._fetch_nonce())
     nonceManager.tasks.add(task)
@@ -24,11 +27,10 @@ async def test_nonce_fetch(aiosession, staging_directory, event_loop):
     await asyncio.wait([task])
 
 
-@pytest.mark.staging
 @pytest.mark.asyncio
-async def test_nonce_request(aiosession, staging_directory, event_loop):
+async def test_nonce_request(aiosession, pebble_directory, event_loop):
     asyncio.set_event_loop(event_loop)
-    url = staging_directory["newNonce"]
+    url = pebble_directory.newNonce
     nonceManager = NonceManager(url=url, session=aiosession)
     await nonceManager._request_nonce()
     task = nonceManager.tasks.__iter__().__next__()
@@ -37,11 +39,10 @@ async def test_nonce_request(aiosession, staging_directory, event_loop):
     assert await nonceManager.get_nonce() is not None
 
 
-@pytest.mark.staging
 @pytest.mark.asyncio
-async def test_nonce_context(aiosession, staging_directory, event_loop):
+async def test_nonce_context(aiosession, pebble_directory, event_loop):
     asyncio.set_event_loop(event_loop)
-    url = staging_directory["newNonce"]
+    url = pebble_directory.newNonce
     nonceManager = NonceManager(url=url, session=aiosession)
     async with nonceManager:
         assert nonceManager.initialized
@@ -52,11 +53,10 @@ async def test_nonce_context(aiosession, staging_directory, event_loop):
     assert not nonceManager.initialized
 
 
-@pytest.mark.staging
 @pytest.mark.asyncio
-async def test_nonce_exhaustion(aiosession, staging_directory, event_loop):
+async def test_nonce_exhaustion(aiosession, pebble_directory, event_loop):
     asyncio.set_event_loop(event_loop)
-    url = staging_directory["newNonce"]
+    url = pebble_directory.newNonce
     nonceManager = NonceManager(url=url, session=aiosession)
     async with nonceManager:
         for _ in range(11):

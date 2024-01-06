@@ -7,21 +7,19 @@ import asyncio
 from acme_isolator.acme.request.session import Session
 
 
-@pytest.mark.staging
 @pytest.mark.asyncio
-async def test_context(staging_api_url):
-    async with Session(staging_api_url) as session:
+async def test_context(pebble_api_url, pebble_CA_injection, pebble_process):
+    async with Session(pebble_api_url) as session:
         pass
 
 
-@pytest.mark.staging
 @pytest.mark.asyncio
-async def test_nonce(staging_api_url, aiosession, event_loop):
+async def test_nonce(aiosession, event_loop, pebble_api_url, pebble_directory):
     asyncio.set_event_loop(event_loop)
     loop = event_loop
-    session = Session(staging_api_url)
+    session = Session(pebble_api_url)
     async with session:
-        assert session.directory.newNonce == directory_resource_json["newNonce"]
+        assert session.directory.newNonce == pebble_directory.newNonce
         assert session.resource_sessions["newNonce"] is not None
         await asyncio.sleep(5)
         assert len(session.sessions) == 1
@@ -30,8 +28,9 @@ async def test_nonce(staging_api_url, aiosession, event_loop):
         assert await session.nonce_pool.get_nonce() is not None
 
 
-@pytest.mark.staging
 @pytest.mark.asyncio
-async def test_session_count(staging_api_url):
-    async with Session(staging_api_url) as session:
-        assert set(session.sessions.keys()) == {"https://acme-staging-v02.api.letsencrypt.org"}
+async def test_session_count(event_loop, pebble_CA_injection, pebble_api_url, pebble_process):
+    asyncio.set_event_loop(event_loop)
+    loop = event_loop
+    async with Session(pebble_api_url) as session:
+        assert len(set(session.sessions.keys())) == 1
