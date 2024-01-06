@@ -5,10 +5,9 @@ import pytest
 import json
 from base64 import urlsafe_b64encode
 from random import randint
-from .pebble_fixtures import *
-# from .server_mocking import *
 from .key_generation import generate_key_pair
-# from .staging_fixtures import *
+from .pebble_fixtures import *
+from .session_fixtures import *
 from .test_directory import *
 
 
