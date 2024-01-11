@@ -1,6 +1,5 @@
 import pytest
 import pytest_asyncio
-from .staging_fixtures import directory_resource_json
 
 import asyncio
 
@@ -14,7 +13,7 @@ async def test_context(pebble_api_url, pebble_CA_injection, pebble_process):
 
 
 @pytest.mark.asyncio
-async def test_nonce(aiosession, event_loop, pebble_api_url, pebble_directory):
+async def test_nonce(event_loop, pebble_api_url, pebble_directory):
     asyncio.set_event_loop(event_loop)
     loop = event_loop
     session = Session(pebble_api_url)
