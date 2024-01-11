@@ -65,10 +65,15 @@ class ACME_Account(ACME_Object):
         nonce = await session.nonce_pool.get_nonce()
         url = session.directory.newAccount
         req = JwsJwk(payload=payload, nonce=nonce, key=key, url=url).build()
-        async with session.resource_sessions["newAccount"].post(url=url, data=req) as resp:
-            assert resp.status == 200
-            data = await resp.json()
-            new_nonce = resp.headers["Replay-Nonce"]
-            session.nonce_pool.put_nonce(new_nonce)
-            del data["key"]
-            return ACME_Account(key=key, url=resp.headers["Location"], session=session, **data)
+        async with session.resource_sessions["newAccount"].post(url=url, data=req, headers={"User-Agent": "agent", "Content-Type": "application/jose+json"}) as resp:
+            try:
+                assert resp.status == 200
+                data = await resp.json()
+                new_nonce = resp.headers["Replay-Nonce"]
+                session.nonce_pool.put_nonce(new_nonce)
+                del data["key"]
+                return ACME_Account(key=key, url=resp.headers["Location"], session=session, **data)
+            except AssertionError as e:
+                print(e)
+                print(await resp.json(), file=sys.stderr)
+                raise e
