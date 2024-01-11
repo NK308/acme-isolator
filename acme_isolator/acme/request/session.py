@@ -2,6 +2,7 @@ from .nonce import NonceManager
 from aiohttp import ClientSession
 from asyncio import gather
 from urllib.parse import urlparse
+from ..objects.exceptions import UnexpectedResponseException
 from ..objects.directory import ACME_Directory
 from .constants import USER_AGENT
 
@@ -45,6 +46,9 @@ class Session:
     async def post(self, url: str, payload: dict | bytes) -> tuple[dict, int]:
         session = await self.check_session(url)
         async with session.post(url=url, data=payload, headers={"Content-Type": "application/jose.json"}) as resp:
+            if resp.headers["Content-Type"] == "application/problem+json":
+                raise UnexpectedResponseException(resp.status, response=await resp.json()).convert_exception()
+            assert not resp.headers["Content-Type"] == "application/problem+json"
             data = await resp.json()
             status = resp.status
             new_nonce = resp.headers["Replay-Nonce"]
