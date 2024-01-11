@@ -32,22 +32,29 @@ def pebble_api_url() -> str:
     return PEBBLE_URL
 
 
+class PebbleStarter(ProcessStarter):
+    args = ["/usr/bin/go", "run", "./cmd/pebble"]
+    popen_kwargs = {"cwd": "./pebble",
+                    "shell": False}
+    terminate_on_interrupt = True
+    pattern = r"Pebble \d+/\d+/\d+ \d+:\d+:\d+ Listening on: .*"
+    timeout = 10
+
+    def startup_check(self):
+        return True  # TODO maybe add an actual test
+
+
 @pytest.fixture
 def pebble_process(xprocess):
-    class PebbleStarter(ProcessStarter):
-        args = ["/usr/bin/go", "run", "./cmd/pebble"]
-        popen_kwargs = {"cwd": "./pebble",
-                        "shell": False}
-        terminate_on_interrupt = True
-        pattern = r"Pebble \d+/\d+/\d+ \d+:\d+:\d+ Listening on: .*"
-        timeout = 10
-
-        def startup_check(self):
-            return True # TODO maybe add an actual test
-
     process_name = "pebble"
     xprocess.ensure(process_name, PebbleStarter)
     yield
-
     xprocess.getinfo(process_name).terminate()
 
+
+@pytest.fixture(scope="module")
+def pebble_process_persistent(xprocess):
+    process_name = "pebble"
+    xprocess.ensure(process_name, PebbleStarter)
+    yield
+    xprocess.getinfo(process_name).terminate()
