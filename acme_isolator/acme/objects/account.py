@@ -13,7 +13,6 @@ class ACME_Account(ACME_Object):
     session: Session
     status: str
     contact: list[str] | None
-    termsOfServiceAgreed: bool | None
     orders: str | ACME_Orders
     parent: None = field(default=None, init=False)
 
