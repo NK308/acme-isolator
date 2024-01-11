@@ -53,7 +53,8 @@ class ACME_Account(ACME_Object):
                 data = await resp.json()
                 new_nonce = resp.headers["Replay-Nonce"]
                 session.nonce_pool.put_nonce(new_nonce)
-                return ACME_Account(url=resp.headers["Location"], session=session, **data)
+                del data["key"]
+                return ACME_Account(url=resp.headers["Location"], key=key, session=session, **data)
             except AssertionError:
                 print(f"Got HTTP status code {resp.status} (201 expected)", file=sys.stderr)
                 print(await resp.json(), file=sys.stderr)
@@ -69,4 +70,5 @@ class ACME_Account(ACME_Object):
             data = await resp.json()
             new_nonce = resp.headers["Replay-Nonce"]
             session.nonce_pool.put_nonce(new_nonce)
+            del data["key"]
             return ACME_Account(key=key, url=resp.headers["Location"], session=session, **data)
