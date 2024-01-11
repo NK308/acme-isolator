@@ -13,3 +13,6 @@ async def test_account_creation(pebble_session_without_account, generate_key_pai
     account = await ACME_Account.create_from_key(session=pebble_session_without_account, key=generate_key_pair, contact=["mailto:notmymail@example.com"])
 
 
+@pytest.mark.asyncio
+async def test_account_fetching(pebble_session, pebble_session_without_account):
+    await ACME_Account.get_from_key(session=pebble_session_without_account, key=pebble_session.key)
