@@ -1,3 +1,4 @@
+from .exceptions import UnexpectedResponseException
 from .base import ACME_Object
 from dataclasses import dataclass, field
 from .order import ACME_Orders
@@ -6,6 +7,9 @@ from ..request import JwsKid, JwsJwk
 from jwcrypto.jwk import JWK
 import sys
 
+ACCOUNT_VALID = "valid"
+ACCOUNT_DEACTIVATED = "deactivated"
+ACCOUNT_REVOkED = "revoked"
 
 @dataclass(order=False, kw_only=True)
 class ACME_Account(ACME_Object):
@@ -56,8 +60,7 @@ class ACME_Account(ACME_Object):
                 del data["key"]
                 return ACME_Account(url=resp.headers["Location"], key=key, session=session, **data)
             except AssertionError:
-                print(f"Got HTTP status code {resp.status} (201 expected)", file=sys.stderr)
-                print(await resp.json(), file=sys.stderr)
+                raise UnexpectedResponseException(resp.status, response=await resp.json())
 
     @classmethod
     async def get_from_key(cls, session: Session, key: JWK):
@@ -73,7 +76,25 @@ class ACME_Account(ACME_Object):
                 session.nonce_pool.put_nonce(new_nonce)
                 del data["key"]
                 return ACME_Account(key=key, url=resp.headers["Location"], session=session, **data)
-            except AssertionError as e:
-                print(e)
-                print(await resp.json(), file=sys.stderr)
-                raise e
+            except AssertionError:
+                raise UnexpectedResponseException(resp.status, response=await resp.json())
+
+    async def post(self, url: str, payload: dict | bytes) -> tuple[dict, int]:
+        nonce = await self.session.nonce_pool.get_nonce()
+        jws = JwsKid(url=url, kid=self.url, key=self.key, payload=payload, nonce=nonce)
+        return await self.session.post(url=url, payload=jws.build())
+
+    async def update_account(self, **updated_payload):
+        try:
+            resp, status = await self.post(url=self.url, payload=updated_payload)
+            assert status == 200
+            self.status = resp["status"]
+            self.contact = resp["contact"]
+            # TODO check if account url has to be updated
+        except AssertionError as e:
+            raise UnexpectedResponseException(resp.status, response=await resp.json())
+
+
+    async def deactivate_account(self):
+        await self.update_account(status="deactivated")
+
