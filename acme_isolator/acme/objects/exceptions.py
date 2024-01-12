@@ -4,6 +4,25 @@ import json
 class ACME_Exception(Exception):
     pass
 
+class ACME_ProblemException(ACME_Exception):
+    type: str = "urn:ietf:params:acme:error"
+    description: str | None
+    detail: str
+    identifier = None
+    subproblems: list
+
+    def __init__(self, type: str, detail: str):
+        self.type = type
+        self.detail = detail
+
+    @staticmethod
+    def parse_problem(data: dict):
+        pass
+
+
+class MalformedException(ACME_Exception):
+
+
 
 class UnexpectedResponseException(ACME_Exception):
     response = dict | None
