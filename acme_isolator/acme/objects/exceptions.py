@@ -50,122 +50,122 @@ class ACME_ProblemException(ACME_Exception):
 
 class AccountDoesNotExistException(ACME_ProblemException):
     type = "accountDoesNotExist"
-    detail = "The request specified an account that does not exist"
+    description = "The request specified an account that does not exist"
 
 
 class AlreadyRevokedException(ACME_ProblemException):
     type = "alreadyRevoked"
-    detail = "The request specified a certificate to be revoked that has already been revoked"
+    description = "The request specified a certificate to be revoked that has already been revoked"
 
 
 class BadCSRException(ACME_ProblemException):
     type = "badCSR"
-    detail = "The CSR is unacceptable (e.g., due to a short key)"
+    description = "The CSR is unacceptable (e.g., due to a short key)"
 
 
 class BadNonceException(ACME_ProblemException):
     type = "badNonce"
-    detail = "The client sent an unacceptable anti-replay nonce"
+    description = "The client sent an unacceptable anti-replay nonce"
 
 
 class BadPublicKeyException(ACME_ProblemException):
     type = "badPublicKey"
-    detail = "The JWS was signed by a public key the server does not support"
+    description = "The JWS was signed by a public key the server does not support"
 
 
 class BadRevocationReasonException(ACME_ProblemException):
     type = "badRevocationReason"
-    detail = "The revocation reason provided is not allowed by the server"
+    description = "The revocation reason provided is not allowed by the server"
 
 
 class BadSignatureAlgorithmException(ACME_ProblemException):
     type = "badSignatureAlgorithm"
-    detail = "The JWS was signed with an algorithm the server does not support"
+    description = "The JWS was signed with an algorithm the server does not support"
 
 
 class CaaException(ACME_ProblemException):
     type = "caa"
-    detail = "Certification Authority Authorization (CAA) records forbid the CA from issuing a certificate"
+    description = "Certification Authority Authorization (CAA) records forbid the CA from issuing a certificate"
 
 
 class CompoundException(ACME_ProblemException):
     type = "compound"
-    detail = "Specific error conditions are indicated in the \"subproblems\" array"
+    description = "Specific error conditions are indicated in the \"subproblems\" array"
 
 
 class ConnectionException(ACME_ProblemException):
     type = "connection"
-    detail = "The server could not connect to validation target"
+    description = "The server could not connect to validation target"
 
 
 class DnsException(ACME_ProblemException):
     type = "dns"
-    detail = "There was a problem with a DNS query during identifier validation"
+    description = "There was a problem with a DNS query during identifier validation"
 
 
 class ExternalAccountRequiredException(ACME_ProblemException):
     type = "externalAccountRequired"
-    detail = "The request must include a value for the \"externalAccountBinding\" field"
+    description = "The request must include a value for the \"externalAccountBinding\" field"
 
 
 class IncorrectResponseException(ACME_ProblemException):
     type = "incorrectResponse"
-    detail = "Response received didn't match the challenge's requirements"
+    description = "Response received didn't match the challenge's requirements"
 
 
 class InvalidContactException(ACME_ProblemException):
     type = "invalidContact"
-    detail = "A contact URL for an account was invalid"
+    description = "A contact URL for an account was invalid"
 
 
 class MalformedException(ACME_ProblemException):
     type = "malformed"
-    detail = "The request message was malformed"
+    description = "The request message was malformed"
 
 
 class OrderNotReadyException(ACME_ProblemException):
     type = "orderNotReady"
-    detail = "The request attempted to finalize an order that is not ready to be finalized"
+    description = "The request attempted to finalize an order that is not ready to be finalized"
 
 
 class RateLimitedException(ACME_ProblemException):
     type = "rateLimited"
-    detail = "The request exceeds a rate limit"
+    description = "The request exceeds a rate limit"
 
 
 class RejectedIdentifierException(ACME_ProblemException):
     type = "rejectedIdentifier"
-    detail = "The server will not issue certificates for the identifier"
+    description = "The server will not issue certificates for the identifier"
 
 
 class ServerInternalException(ACME_ProblemException):
     type = "serverInternal"
-    detail = "The server experienced an internal error"
+    description = "The server experienced an internal error"
 
 
 class TlsException(ACME_ProblemException):
     type = "tls"
-    detail = "The server received a TLS error during validation"
+    description = "The server received a TLS error during validation"
 
 
 class UnauthorizedException(ACME_ProblemException):
     type = "unauthorized"
-    detail = "The client lacks sufficient authorization"
+    description = "The client lacks sufficient authorization"
 
 
 class UnsupportedContactException(ACME_ProblemException):
     type = "unsupportedContact"
-    detail = "A contact URL for an account used an unsupported protocol scheme"
+    description = "A contact URL for an account used an unsupported protocol scheme"
 
 
 class UnsupportedIdentifier(ACME_ProblemException):
     type = "unsupportedIdentifier"
-    detail = "identifier is of an unsupported type"
+    description = "identifier is of an unsupported type"
 
 
 class UserActionRequiredException(ACME_ProblemException):
     type = "userActionRequired"
-    detail = "Visit the \"instance\" URL and take actions specified there"
+    description = "Visit the \"instance\" URL and take actions specified there"
 
 
 class UnexpectedResponseException(ACME_Exception):
