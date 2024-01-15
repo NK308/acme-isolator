@@ -1,5 +1,5 @@
 from .nonce import NonceManager
-from aiohttp import ClientSession
+from aiohttp import ClientSession, ClientResponseError
 from asyncio import gather
 from urllib.parse import urlparse
 from ..objects.exceptions import UnexpectedResponseException
@@ -46,11 +46,18 @@ class Session:
     async def post(self, url: str, payload: dict | bytes) -> tuple[dict, int]:
         session = await self.check_session(url)
         async with session.post(url=url, data=payload, headers={"Content-Type": "application/jose.json"}) as resp:
-            if resp.headers["Content-Type"] == "application/problem+json":
-                raise UnexpectedResponseException(resp.status, response=await resp.json()).convert_exception()
-            assert not resp.headers["Content-Type"] == "application/problem+json"
-            data = await resp.json()
-            status = resp.status
-            new_nonce = resp.headers["Replay-Nonce"]
-            self.nonce_pool.put_nonce(new_nonce)
-            return data, status
+            try:
+                # if resp.headers["Content-Type"] == "application/problem+json":
+                #     raise UnexpectedResponseException(resp.status, response=await resp.json()).convert_exception()
+                assert not resp.headers["Content-Type"] == "application/problem+json", "header"
+                data = await resp.json()
+                assert resp.status < 400, "code"
+                status = resp.status
+                new_nonce = resp.headers["Replay-Nonce"]
+                self.nonce_pool.put_nonce(new_nonce)
+                return data, status
+            except AssertionError as e:
+                if str(e) == "code":
+                    raise UnexpectedResponseException(resp.status, response=data)
+                else:
+                    raise ClientResponseError(status=resp.status, headers=resp.headers, history=(resp,), request_info=resp.request_info)

@@ -183,5 +183,7 @@ class UnexpectedResponseException(ACME_Exception):
         super(Exception, self).__init__(msg)
 
     def convert_exception(self) -> ACME_Exception:
+        if self.response is not None and {"type", "detail"} <= set(self.response.keys()):
+            return ACME_ProblemException.parse_problem(self.response)
         return self  # TODO interpret response and return a more specific exception
 

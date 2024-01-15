@@ -1,4 +1,4 @@
-from .exceptions import UnexpectedResponseException
+from .exceptions import UnexpectedResponseException, ACME_ProblemException
 from .base import ACME_Object
 from dataclasses import dataclass, field
 from .order import ACME_Orders
@@ -10,6 +10,7 @@ import sys
 ACCOUNT_VALID = "valid"
 ACCOUNT_DEACTIVATED = "deactivated"
 ACCOUNT_REVOkED = "revoked"
+
 
 @dataclass(order=False, kw_only=True)
 class ACME_Account(ACME_Object):
@@ -32,7 +33,7 @@ class ACME_Account(ACME_Object):
             if status == 200:
                 self.orders = ACME_Orders(url=url, parent=self, **data)
             else:
-                raise ConnectionError(f"Server returned status code {status} while fetching orders from {url}.")
+                raise UnexpectedResponseException(status, data )
         elif type(self.orders) == ACME_Orders:
             await self.orders.update()
         await self.orders.update_orders()
@@ -92,7 +93,7 @@ class ACME_Account(ACME_Object):
             self.contact = resp["contact"]
             # TODO check if account url has to be updated
         except AssertionError as e:
-            raise UnexpectedResponseException(resp.status, response=await resp.json())
+            raise UnexpectedResponseException(status, response=resp).convert_exception()
 
 
     async def deactivate_account(self):

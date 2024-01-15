@@ -1,4 +1,5 @@
 from .base import ACME_Object
+from .exceptions import ACME_ProblemException, UnexpectedResponseException, ACME_Exception
 from dataclasses import dataclass, InitVar, fields, field
 from aiohttp import request
 from ..request.constants import USER_AGENT
@@ -26,8 +27,9 @@ class ACME_Directory(ACME_Object):
     @classmethod
     async def get_directory(cls, url: str):
         async with request("GET", url, headers={"User-Agent": USER_AGENT}) as resp:
-            resp.raise_for_status()
             j = await resp.json(encoding="utf-8")
+            if not resp.status == 200:
+                raise UnexpectedResponseException(resp.status, response=await resp.json(encoding="utf-8"), msg="Error while getting directory data").convert_exception()
             class_fields = {f.name for f in fields(cls)}
             return cls(url=url, **{k: v for k, v in j.items() if k in class_fields or k == "meta"})
 
