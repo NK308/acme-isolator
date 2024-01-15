@@ -51,3 +51,23 @@ class JwsKid(JwsBase):
         header = super().create_headers()
         header["kid"] = self.kid
         return header
+
+
+@dataclass(kw_only=True)
+class JwsRolloverRequest(JwsJwk):
+    account: str = field(init=True, default=None)
+    oldKey: JWK = field(init=True, default=None)
+    nonce = None
+    payload = None
+
+    def build_payload(self):
+        return base64url_encode(json_encode({"account": self.account, "oldKey": self.oldKey.export_public(as_dict=True)}))
+
+    def create_headers(self):
+        d = super().create_headers()
+        del d["nonce"]
+        return d
+
+    def build(self) -> bytes:
+        self.payload = self.build_payload()
+        return super().build()

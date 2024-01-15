@@ -3,7 +3,7 @@ from .base import ACME_Object
 from dataclasses import dataclass, field
 from .order import ACME_Orders
 from ..request.session import Session
-from ..request import JwsKid, JwsJwk
+from ..request import JwsKid, JwsJwk, JwsRolloverRequest
 from jwcrypto.jwk import JWK
 import sys
 
@@ -98,4 +98,18 @@ class ACME_Account(ACME_Object):
 
     async def deactivate_account(self):
         await self.update_account(status="deactivated")
+
+
+    async def key_rollover(self, new_key: JWK):
+        inner_object = JwsRolloverRequest(url=self.url, key=new_key, oldKey=self.key).build()
+        outer_object = JwsKid(url=self.session.directory.keyChange,
+                              payload=inner_object,
+                              key=self.key,
+                              kid=self.url,
+                              nonce=await self.session.nonce_pool.get_nonce()).build()
+        resp, status = await self.session.post(self.session.directory.keyChange, outer_object)
+        assert status == 200
+        self.key = new_key
+        self.url = resp[""]
+
 
