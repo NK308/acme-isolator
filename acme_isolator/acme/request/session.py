@@ -2,7 +2,7 @@ from .nonce import NonceManager
 from aiohttp import ClientSession, ClientResponseError
 from asyncio import gather
 from urllib.parse import urlparse
-from ..objects.exceptions import UnexpectedResponseException
+from ..objects.exceptions import UnexpectedResponseException, BadNonceException
 from ..objects.directory import ACME_Directory
 from .constants import USER_AGENT
 
@@ -44,6 +44,15 @@ class Session:
             return new_session
 
     async def post(self, url: str, payload: dict | bytes) -> tuple[dict, int]:
+        while True:
+            try:
+                resp, status = await self._post(url=url, payload=payload)
+            except BadNonceException:
+                pass
+            else:
+                return resp, status
+
+    async def _post(self, url: str, payload: dict | bytes) -> tuple[dict, int]:
         session = await self.check_session(url)
         async with session.post(url=url, data=payload, headers={"Content-Type": "application/jose.json"}) as resp:
             try:
@@ -58,6 +67,6 @@ class Session:
                 return data, status
             except AssertionError as e:
                 if str(e) == "code":
-                    raise UnexpectedResponseException(resp.status, response=data)
+                    raise UnexpectedResponseException(resp.status, response=data).convert_exception()
                 else:
                     raise ClientResponseError(status=resp.status, headers=resp.headers, history=(resp,), request_info=resp.request_info)
