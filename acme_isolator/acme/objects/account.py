@@ -78,7 +78,7 @@ class ACME_Account(ACME_Object):
                 del data["key"]
                 return ACME_Account(key=key, url=resp.headers["Location"], session=session, **data)
             except AssertionError:
-                raise UnexpectedResponseException(resp.status, response=await resp.json())
+                raise UnexpectedResponseException(resp.status, response=await resp.json()).convert_exception()
 
     async def post(self, url: str, payload: dict | bytes) -> tuple[dict, int]:
         nonce = await self.session.nonce_pool.get_nonce()
