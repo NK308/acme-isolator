@@ -38,14 +38,16 @@ class ACME_ProblemException(ACME_Exception):
     @staticmethod
     def parse_problem(data: dict):
         try:
-            if "type" in _problem_type_registry.keys():
-                return _problem_type_registry[type](data)
+            if data["type"] in _problem_type_registry.keys():
+                return _problem_type_registry[data["type"]](data)
         except KeyError:
             return ACME_ProblemException(data)
         except AttributeError as e:
             return ExceptionGroup("error while creating ACME_problemException", [e, ACME_ProblemException(data)])
         except Exception as e:
             return e
+        else:
+            return None
 
 
 class AccountDoesNotExistException(ACME_ProblemException):
@@ -184,6 +186,7 @@ class UnexpectedResponseException(ACME_Exception):
 
     def convert_exception(self) -> ACME_Exception:
         if self.response is not None and {"type", "detail"} <= set(self.response.keys()):
-            return ACME_ProblemException.parse_problem(self.response)
-        return self  # TODO interpret response and return a more specific exception
-
+            e = ACME_ProblemException.parse_problem(self.response)
+            if e is not None:
+                return ACME_ProblemException.parse_problem(self.response)
+        return self
