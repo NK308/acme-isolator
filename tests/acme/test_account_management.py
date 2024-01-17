@@ -41,6 +41,6 @@ class TestAccount:
             pass
         else:
             raise AssertionError("Old key is still accepted by the server")
-        ACME_Account.get_from_key(key=generate_key_pair[1], session=pebble_session.session)
+        await ACME_Account.get_from_key(key=generate_key_pair[1], session=pebble_session.session)
 
 
