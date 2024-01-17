@@ -44,7 +44,7 @@ class PebbleStarter(ProcessStarter):
         return True  # TODO maybe add an actual test
 
 
-@pytest.fixture
+@pytest.fixture(scope="class")
 def pebble_process(xprocess):
     process_name = "pebble"
     xprocess.ensure(process_name, PebbleStarter)
