@@ -30,3 +30,17 @@ class TestAccount:
             raise AssertionError(f"Got {e.__class__} instead of AccountDoesNotExistException") from e
         else:
             raise AssertionError("Expected an AccountDoesNotExistException, but got none.")
+
+    @pytest.mark.asyncio
+    @pytest.mark.key_count(2)
+    async def test_key_rollover(self, pebble_session, generate_key_pair):
+        await pebble_session.key_rollover(new_key=generate_key_pair[1])
+        try:
+            await ACME_Account.get_from_key(key=generate_key_pair[0], session=pebble_session.session)
+        except AccountDoesNotExistException:
+            pass
+        else:
+            raise AssertionError("Old key is still accepted by the server")
+        ACME_Account.get_from_key(key=generate_key_pair[1], session=pebble_session.session)
+
+
