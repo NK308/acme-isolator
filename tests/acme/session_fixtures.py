@@ -30,7 +30,7 @@ async def pebble_session_without_account(event_loop, pebble_process, pebble_api_
 async def pebble_session(aiosession, pebble_process, pebble_api_url, generate_key_pair) -> ACME_Account:
     async with Session(pebble_api_url) as session:
         account: ACME_Account = await ACME_Account.create_from_key(session=session,
-                                                                   key=generate_key_pair,
+                                                                   key=generate_key_pair[0],
                                                                    contact=["mailto:notmymail@example.com"])
         yield account
         # TODO delete account as cleanup

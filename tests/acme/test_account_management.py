@@ -13,7 +13,7 @@ class TestAccount:
     @pytest.mark.pebble
     @pytest.mark.asyncio
     async def test_account_creation(self, pebble_session_without_account, generate_key_pair):
-        account = await ACME_Account.create_from_key(session=pebble_session_without_account, key=generate_key_pair, contact=["mailto:notmymail@example.com"])
+        account = await ACME_Account.create_from_key(session=pebble_session_without_account, key=generate_key_pair[0], contact=["mailto:notmymail@example.com"])
 
 
     @pytest.mark.asyncio
@@ -23,7 +23,7 @@ class TestAccount:
     @pytest.mark.asyncio
     async def test_nonexisting_account(self, pebble_session_without_account, generate_key_pair):
         try:
-            await ACME_Account.get_from_key(session=pebble_session_without_account, key=generate_key_pair)
+            await ACME_Account.get_from_key(session=pebble_session_without_account, key=generate_key_pair[0])
         except AccountDoesNotExistException:
             pass
         except Exception as e:
