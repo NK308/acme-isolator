@@ -9,11 +9,11 @@ CONTENT_TYPE = "application/jose+json"
 
 @dataclass(kw_only=True)
 class JwsBase(ABC):
-    nonce: str
+    nonce: str = field(default="", init=False)
     url: str
     key: JWK
     payload: dict | bytes | None = None
-    alg: str = "ES256"
+    alg: str = field(default="ES256", init=False, repr=False)
     jws: JWS = None
 
     def __post_init__(self):
@@ -25,9 +25,16 @@ class JwsBase(ABC):
             payload = json_encode(self.payload)
         self.jws = JWS(payload=payload)
 
-    def build(self) -> bytes:
+    def build(self, nonce: str) -> bytes:
+        self.nonce = nonce
         self.jws.add_signature(self.key, self.alg, protected=self.create_headers())
         return self.jws.serialize(compact=False).encode("utf-8")
+
+    def reset_build(self):
+        self.nonce = ""
+        del self.jws.objects["protected"]
+        # del self.jws.objects["signatures"]
+        del self.jws.objects["signature"]
 
     @abstractmethod
     def create_headers(self):
@@ -57,7 +64,6 @@ class JwsKid(JwsBase):
 class JwsRolloverRequest(JwsJwk):
     account: str = field(init=True, default=None)
     oldKey: JWK = field(init=True, default=None)
-    nonce = None
     payload = None
 
     def build_payload(self):
@@ -70,4 +76,4 @@ class JwsRolloverRequest(JwsJwk):
 
     def build(self) -> bytes:
         self.payload = self.build_payload()
-        return super().build()
+        return super().build("")

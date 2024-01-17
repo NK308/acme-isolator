@@ -3,7 +3,7 @@ from .base import ACME_Object
 from dataclasses import dataclass, field
 from .order import ACME_Orders
 from ..request.session import Session
-from ..request import JwsKid, JwsJwk, JwsRolloverRequest
+from ..request import JwsBase, JwsKid, JwsJwk, JwsRolloverRequest
 from jwcrypto.jwk import JWK
 import sys
 
@@ -51,43 +51,37 @@ class ACME_Account(ACME_Object):
         payload = {"termsOfServiceAgreed": True, "contact": contact}
         nonce = await session.nonce_pool.get_nonce()
         url = session.directory.newAccount
-        req = JwsJwk(payload=payload, nonce=nonce, key=key, url=url).build()
-        async with session.resource_sessions["newAccount"].post(url=url, data=req, headers={"User-Agent": "agent", "Content-Type": "application/jose+json"}) as resp:
-            try:
-                assert resp.status == 201, f"{resp.status} {await resp.json()}" # Maybe warning, if the account already exists
-                data = await resp.json()
-                new_nonce = resp.headers["Replay-Nonce"]
-                session.nonce_pool.put_nonce(new_nonce)
-                del data["key"]
-                return ACME_Account(url=resp.headers["Location"], key=key, session=session, **data)
-            except AssertionError:
-                raise UnexpectedResponseException(resp.status, response=await resp.json())
+        req = JwsJwk(payload=payload, key=key, url=url)
+        try:
+            resp, status, location = await session.post(req)
+            assert status == 201, f"{resp.status} {await resp.json()}" # Maybe warning, if the account already exists
+            # data = await resp.json()
+            del resp["key"]
+            return ACME_Account(url=location, key=key, session=session, **resp)
+        except AssertionError:
+            raise UnexpectedResponseException(status, resp).convert_exception()
 
     @classmethod
     async def get_from_key(cls, session: Session, key: JWK):
         payload = {"onlyReturnExisting": True}
-        nonce = await session.nonce_pool.get_nonce()
         url = session.directory.newAccount
-        req = JwsJwk(payload=payload, nonce=nonce, key=key, url=url).build()
-        async with session.resource_sessions["newAccount"].post(url=url, data=req, headers={"User-Agent": "agent", "Content-Type": "application/jose+json"}) as resp:
-            try:
-                assert resp.status == 200
-                data = await resp.json()
-                new_nonce = resp.headers["Replay-Nonce"]
-                session.nonce_pool.put_nonce(new_nonce)
-                del data["key"]
-                return ACME_Account(key=key, url=resp.headers["Location"], session=session, **data)
-            except AssertionError:
-                raise UnexpectedResponseException(resp.status, response=await resp.json()).convert_exception()
+        req = JwsJwk(payload=payload, key=key, url=url)
+        try:
+            resp, status, location = await session.post(req)
+            assert status == 200
+            del resp["key"]
+            return ACME_Account(key=key, url=location, session=session, **resp)
+        except AssertionError:
+            raise UnexpectedResponseException(status, response=resp).convert_exception()
 
-    async def post(self, url: str, payload: dict | bytes) -> tuple[dict, int]:
+    async def post(self, url: str, payload) -> tuple[dict, int, str]:
         nonce = await self.session.nonce_pool.get_nonce()
-        jws = JwsKid(url=url, kid=self.url, key=self.key, payload=payload, nonce=nonce)
-        return await self.session.post(url=url, payload=jws.build())
+        req = JwsKid(url=url, kid=self.url, key=self.key, payload=payload)
+        return await self.session.post(req)
 
     async def update_account(self, **updated_payload):
         try:
-            resp, status = await self.post(url=self.url, payload=updated_payload)
+            resp, status, location = await self.post(url=self.url, payload=updated_payload)
             assert status == 200
             self.status = resp["status"]
             self.contact = resp["contact"]
@@ -102,14 +96,11 @@ class ACME_Account(ACME_Object):
 
     async def key_rollover(self, new_key: JWK):
         inner_object = JwsRolloverRequest(url=self.url, key=new_key, oldKey=self.key).build()
-        outer_object = JwsKid(url=self.session.directory.keyChange,
-                              payload=inner_object,
-                              key=self.key,
-                              kid=self.url,
-                              nonce=await self.session.nonce_pool.get_nonce()).build()
-        resp, status = await self.session.post(self.session.directory.keyChange, outer_object)
-        assert status == 200
-        self.key = new_key
-        self.url = resp[""]
+        try:
+            resp, status, location = await self.post(self.session.directory.keyChange, inner_object)
+            assert status == 200
+            self.key = new_key
+        except AssertionError:
+            raise UnexpectedResponseException(status, response=resp).convert_exception()
 
 

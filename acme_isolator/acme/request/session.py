@@ -3,6 +3,7 @@ from aiohttp import ClientSession, ClientResponseError
 from asyncio import gather
 from urllib.parse import urlparse
 from ..objects.exceptions import UnexpectedResponseException, BadNonceException
+from .jws import JwsBase
 from ..objects.directory import ACME_Directory
 from .constants import USER_AGENT
 
@@ -43,28 +44,27 @@ class Session:
             self.sessions[location] = new_session
             return new_session
 
-    async def post(self, url: str, payload: dict | bytes) -> tuple[dict, int]:
+    async def post(self, request: JwsBase) -> tuple[dict, int, str]:
         while True:
             try:
-                resp, status = await self._post(url=url, payload=payload)
+                resp, status, location = await self._post(request)
             except BadNonceException:
-                pass
+                request.reset_build()
             else:
-                return resp, status
+                return resp, status, location
 
-    async def _post(self, url: str, payload: dict | bytes) -> tuple[dict, int]:
-        session = await self.check_session(url)
-        async with session.post(url=url, data=payload, headers={"Content-Type": "application/jose.json"}) as resp:
+    async def _post(self, request: JwsBase) -> tuple[dict, int, str]:
+        session = await self.check_session(request.url)
+        payload = request.build(await self.nonce_pool.get_nonce())
+
+        async with session.post(url=request.url, data=payload, headers={"Content-Type": "application/jose+json"}) as resp:
             try:
-                # if resp.headers["Content-Type"] == "application/problem+json":
-                #     raise UnexpectedResponseException(resp.status, response=await resp.json()).convert_exception()
                 assert not resp.headers["Content-Type"] == "application/problem+json", "header"
                 data = await resp.json()
                 assert resp.status < 400, "code"
-                status = resp.status
                 new_nonce = resp.headers["Replay-Nonce"]
                 self.nonce_pool.put_nonce(new_nonce)
-                return data, status
+                return data, resp.status, resp.headers["Location"]
             except AssertionError as e:
                 if str(e) == "code":
                     raise UnexpectedResponseException(resp.status, response=data).convert_exception()
