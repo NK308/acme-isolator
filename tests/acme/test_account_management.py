@@ -4,7 +4,7 @@ import pytest
 import pytest_asyncio
 
 from acme_isolator.acme.objects.account import ACME_Account
-from acme_isolator.acme.objects.exceptions import AccountDoesNotExistException
+from acme_isolator.acme.objects.exceptions import AccountDoesNotExistException, UnauthorizedException
 from jwcrypto.jwk import JWK
 
 
@@ -30,6 +30,17 @@ class TestAccount:
             raise AssertionError(f"Got {e.__class__} instead of AccountDoesNotExistException") from e
         else:
             raise AssertionError("Expected an AccountDoesNotExistException, but got none.")
+
+    @pytest.mark.asyncio
+    async def test_account_deletion(self, pebble_session):
+        await pebble_session.deactivate_account()
+        try:
+            a = await ACME_Account.get_from_key(session=pebble_session.session, key=pebble_session.key)
+        except UnauthorizedException:
+            pass
+        else:
+            if not a.status == "deactivated":
+                raise AssertionError("Account still does exist, after it should have been deleted")
 
     @pytest.mark.asyncio
     @pytest.mark.key_count(2)
