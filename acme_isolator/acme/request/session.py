@@ -1,3 +1,5 @@
+import sys
+
 from .nonce import NonceManager
 from aiohttp import ClientSession, ClientResponseError
 from asyncio import gather
@@ -44,29 +46,37 @@ class Session:
             self.sessions[location] = new_session
             return new_session
 
-    async def post(self, request: JwsBase) -> tuple[dict, int, str]:
+    async def post(self, request: JwsBase, empty_response: bool = False) -> tuple[dict, int, str]:
         while True:
             try:
-                resp, status, location = await self._post(request)
+                resp, status, location = await self._post(request, empty_response=empty_response)
             except BadNonceException:
                 request.reset_build()
             else:
                 return resp, status, location
 
-    async def _post(self, request: JwsBase) -> tuple[dict, int, str]:
+    async def _post(self, request: JwsBase, empty_response: bool) -> tuple[dict, int, str]:
         session = await self.check_session(request.url)
         payload = request.build(await self.nonce_pool.get_nonce())
 
         async with session.post(url=request.url, data=payload, headers={"Content-Type": "application/jose+json"}) as resp:
             try:
-                assert not resp.headers["Content-Type"] == "application/problem+json", "header"
-                data = await resp.json()
                 assert resp.status < 400, "code"
+                if empty_response:
+                    data = None
+                else:
+                    assert not resp.headers["Content-Type"] == "application/problem+json", "header"
+                    data = await resp.json()
                 new_nonce = resp.headers["Replay-Nonce"]
                 self.nonce_pool.put_nonce(new_nonce)
-                return data, resp.status, resp.headers["Location"]
+                return data, resp.status, resp.headers.get("Location", None)
+            except KeyError as e:
+                print(resp.status, file=sys.stderr)
+                s = await resp.text()
+                print(s, len(s), file=sys.stderr)
+                raise e
             except AssertionError as e:
                 if str(e) == "code":
-                    raise UnexpectedResponseException(resp.status, response=data).convert_exception()
+                    raise UnexpectedResponseException(resp.status, response=await resp.json()).convert_exception()
                 else:
                     raise ClientResponseError(status=resp.status, headers=resp.headers, history=(resp,), request_info=resp.request_info)
