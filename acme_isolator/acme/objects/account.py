@@ -1,3 +1,5 @@
+import json
+
 from .exceptions import UnexpectedResponseException, ACME_ProblemException
 from .base import ACME_Object
 from dataclasses import dataclass, field
@@ -74,10 +76,10 @@ class ACME_Account(ACME_Object):
         except AssertionError:
             raise UnexpectedResponseException(status, response=resp).convert_exception()
 
-    async def post(self, url: str, payload) -> tuple[dict, int, str]:
+    async def post(self, url: str, payload: dict | bytes | None, empty_response: bool = False) -> tuple[dict, int, str]:
         nonce = await self.session.nonce_pool.get_nonce()
         req = JwsKid(url=url, kid=self.url, key=self.key, payload=payload)
-        return await self.session.post(req)
+        return await self.session.post(req, empty_response=empty_response)
 
     async def update_account(self, **updated_payload):
         try:
@@ -95,9 +97,11 @@ class ACME_Account(ACME_Object):
 
 
     async def key_rollover(self, new_key: JWK):
-        inner_object = JwsRolloverRequest(url=self.url, key=new_key, oldKey=self.key).build()
+        url = self.session.directory.keyChange
+        inner_object = JwsRolloverRequest(url=url, account=self.url, key=new_key, oldKey=self.key).build("")
         try:
-            resp, status, location = await self.post(self.session.directory.keyChange, inner_object)
+            # outer_object = JwsKid(key=self.key, url=url, payload=inner_object, kid=self.url).build(await self.session.nonce_pool.get_nonce())
+            resp, status, location = await self.post(url=url, payload=json.loads(inner_object), empty_response=True)
             assert status == 200
             self.key = new_key
         except AssertionError:

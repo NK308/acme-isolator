@@ -66,14 +66,19 @@ class JwsRolloverRequest(JwsJwk):
     oldKey: JWK = field(init=True, default=None)
     payload = None
 
-    def build_payload(self):
-        return base64url_encode(json_encode({"account": self.account, "oldKey": self.oldKey.export_public(as_dict=True)}))
+    def __post_init__(self):
+        d = {"account": self.account, "oldKey": self.oldKey.export_public(as_dict=True)}
+        # self.payload = base64url_encode(json_encode(d)).encode("utf-8")
+        self.payload = d
+        super().__post_init__()
 
     def create_headers(self):
+        self.nonce = ""
         d = super().create_headers()
         del d["nonce"]
         return d
 
-    def build(self) -> bytes:
-        self.payload = self.build_payload()
-        return super().build("")
+    # def build(self) -> bytes:
+    #     h = self.create_headers()
+    #     self.jws.add_signature(self.key, self.alg, protected=self.create_headers())
+    #     return self.jws.serialize(compact=False)
