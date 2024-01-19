@@ -56,10 +56,9 @@ class ACME_Account(ACME_Object):
         req = JwsJwk(payload=payload, key=key, url=url)
         try:
             resp, status, location = await session.post(req)
-            assert status == 201, f"{resp.status} {await resp.json()}" # Maybe warning, if the account already exists
-            # data = await resp.json()
-            del resp["key"]
-            return ACME_Account(url=location, key=key, session=session, **resp)
+            data = resp.copy()
+            data.update({"key": key, "url": location})
+            return ACME_Account(session=session, **data)
         except AssertionError:
             raise UnexpectedResponseException(status, resp).convert_exception()
 
@@ -71,13 +70,13 @@ class ACME_Account(ACME_Object):
         try:
             resp, status, location = await session.post(req)
             assert status == 200
-            del resp["key"]
-            return ACME_Account(key=key, url=location, session=session, **resp)
+            data = resp.copy()
+            data.update({"key": key, "url": location})
+            return ACME_Account(session=session, **data)
         except AssertionError:
             raise UnexpectedResponseException(status, response=resp).convert_exception()
 
     async def post(self, url: str, payload: dict | bytes | None, empty_response: bool = False) -> tuple[dict, int, str]:
-        nonce = await self.session.nonce_pool.get_nonce()
         req = JwsKid(url=url, kid=self.url, key=self.key, payload=payload)
         return await self.session.post(req, empty_response=empty_response)
 
@@ -100,7 +99,6 @@ class ACME_Account(ACME_Object):
         url = self.session.directory.keyChange
         inner_object = JwsRolloverRequest(url=url, account=self.url, key=new_key, oldKey=self.key).build("")
         try:
-            # outer_object = JwsKid(key=self.key, url=url, payload=inner_object, kid=self.url).build(await self.session.nonce_pool.get_nonce())
             resp, status, location = await self.post(url=url, payload=json.loads(inner_object), empty_response=True)
             assert status == 200
             self.key = new_key
