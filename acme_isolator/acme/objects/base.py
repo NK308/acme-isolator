@@ -58,3 +58,16 @@ class ACME_Object(ABC):
                     field_list.remove(e)
         return field_list
 
+    hold_keys: ClassVar[set] = {"parent"}  # Set of keys, not to be updated by generic update method
+
+    def update_fields(self, data: dict):
+        field_keys = {field.name for field in fields(self)} & set(data.keys()) - self.__class__.hold_keys
+        self.__dict__.update({k: v for k, v in data.items() if k in field_keys})
+
+    async def get_update(self):
+        data, status, location = await self.account.post(url=self.url, payload=None)
+        assert status == 200
+        self.update_fields(data)
+
+
+

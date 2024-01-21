@@ -1,7 +1,7 @@
 import json
 
 from .exceptions import UnexpectedResponseException, ACME_ProblemException
-from .base import ACME_Object
+from .base import ACME_Object, ClassVar
 from dataclasses import dataclass, field
 from .order import ACME_Orders
 from ..request.session import Session
@@ -22,6 +22,8 @@ class ACME_Account(ACME_Object):
     contact: list[str] | None
     orders: str | ACME_Orders
     parent: None = field(default=None, init=False)
+
+    hold_keys: ClassVar[set[str]] = ACME_Object.hold_keys | {"key"}
 
     async def request(self, url: str, payload: dict | None):
         nonce = await self.session.nonce_pool.get_nonce()
@@ -45,7 +47,7 @@ class ACME_Account(ACME_Object):
         return self
 
     @classmethod
-    async def get_from_url(cls, parent_object: ACME_Object, url: str):
+    async def get_from_url(cls, parent_object: ACME_Object, url: str, **additional_fields):
         raise NotImplementedError("Class ACME_Account has not get_from _url classmethod.")
 
     @classmethod
@@ -84,8 +86,7 @@ class ACME_Account(ACME_Object):
         try:
             resp, status, location = await self.post(url=self.url, payload=updated_payload)
             assert status == 200
-            self.status = resp["status"]
-            self.contact = resp["contact"]
+            self.update_fields(resp)
             # TODO check if account url has to be updated
         except AssertionError as e:
             raise UnexpectedResponseException(status, response=resp).convert_exception()
