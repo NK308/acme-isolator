@@ -1,7 +1,20 @@
 import json
 from abc import ABC
 from dataclasses import dataclass, fields
-from typing import Self, Union
+from typing import Self, Union, TypeVar, ClassVar
+
+from ..request.jws import JwsKid
+
+AcmeUrl = TypeVar("AcmeUrl", bound="AcmeUrlBase")
+AcmeObject = TypeVar("AcmeObject", bound="ACME_Object")
+ACME_Account = TypeVar("ACME_Account", bound="ACME_Object")
+
+
+class AcmeUrlBase(str, ABC):
+    outer_class: ClassVar[type(AcmeObject)]
+
+    async def request_object(self, parent: AcmeObject) -> AcmeObject:  #TODO more specific type hinting
+        return self.outer_class.get_from_url(parent_object=parent, url=str(self))
 
 
 @dataclass(order=False, kw_only=True)
@@ -9,26 +22,11 @@ class ACME_Object(ABC):
     url: str
     parent: Union["ACME_Object", None]
 
-    @classmethod
-    def _make_object(cls, response: dict):
-        return cls(**response)
+    url_class: ClassVar[type(AcmeUrl)]
+    request_return_code: ClassVar[int] = 200
 
-    @classmethod
-    def _make_object_with_url_generator(cls, url: str):
-        def _make_object_with_url(response: dict):
-            return cls(url=url, **response)
-        return _make_object_with_url
-
-    @classmethod
-    def parse(cls, response: str, url: str|None = None):
-        if "url" in [field.name for field in fields(cls)] and url is not None:
-            return json.loads(response, object_hook=cls._make_object_with_url_generator(url))
-        elif "url" in [field.name for field in fields(cls)] and url is None:
-            raise ValueError(f"Class {cls} needs an url.")
-        elif "url" not in [field.name for field in fields(cls)] and url is None:
-            return json.loads(response, object_hook=cls._make_object)
-        else:
-            raise ValueError(f"Class {cls} must not have an url.")
+    def __init_subclass__(cls, **kwargs):
+        cls.url_class = type(f"{cls.__name__}Url", (AcmeUrlBase,), dict(outer_class=cls))
 
     @property
     def account(self):
