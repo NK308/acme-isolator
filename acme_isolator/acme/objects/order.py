@@ -1,4 +1,4 @@
-from .base import ACME_Object
+from .base import ACME_Object, ClassVar
 from .identifier import ACME_Identifier
 from .authorization import ACME_Authorization
 from dataclasses import dataclass, field, InitVar
@@ -36,7 +36,9 @@ class ACME_Order(ACME_Object):
 
 @dataclass(order=False, kw_only=True)
 class ACME_Orders(ACME_Object, Sequence):
-    orders: list[str | ACME_Order]
+    orders: list[ACME_Order | ACME_Order.url_class]
+
+    convert_table: ClassVar[dict] = {"orders": ACME_Order.url_class}
 
     def __getitem__(self, i):
         return self.orders[i]

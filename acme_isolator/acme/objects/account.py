@@ -1,7 +1,7 @@
 import json
 
 from .exceptions import UnexpectedResponseException, ACME_ProblemException
-from .base import ACME_Object, ClassVar
+from .base import ACME_Object, ClassVar, AcmeObject
 from dataclasses import dataclass, field
 from .order import ACME_Orders
 from ..request.session import Session
@@ -20,10 +20,16 @@ class ACME_Account(ACME_Object):
     session: Session
     status: str
     contact: list[str] | None
-    orders: str | ACME_Orders
+    orders: ACME_Orders | ACME_Orders.url_class
     parent: None = field(default=None, init=False)
 
     hold_keys: ClassVar[set[str]] = ACME_Object.hold_keys | {"key"}
+    convert_table: ClassVar[dict] = {"orders": ACME_Orders.url_class}
+
+    def complete_dict(response_url: str, key: JWK, **additional_fields) -> dict:
+        d = super().complete_dict(response_url=response_url, **additional_fields)
+        d["orders"] = ACME_Orders.url_class(d["orders"])
+        return d
 
     async def request(self, url: str, payload: dict | None):
         nonce = await self.session.nonce_pool.get_nonce()
@@ -58,7 +64,7 @@ class ACME_Account(ACME_Object):
         req = JwsJwk(payload=payload, key=key, url=url)
         try:
             resp, status, location = await session.post(req)
-            data = resp.copy()
+            data = cls.convert_dict(resp.copy())
             data.update({"key": key, "url": location})
             return ACME_Account(session=session, **data)
         except AssertionError:
@@ -72,7 +78,7 @@ class ACME_Account(ACME_Object):
         try:
             resp, status, location = await session.post(req)
             assert status == 200
-            data = resp.copy()
+            data = cls.convert_dict(resp.copy())
             data.update({"key": key, "url": location})
             return ACME_Account(session=session, **data)
         except AssertionError:

@@ -33,13 +33,32 @@ class ACME_Object(ABC):
         return self.parent.account
 
     @staticmethod
-    async def complete_dict(parent: AcmeObject, response_url: str, **additional_fields) -> dict:
+    def complete_dict(response_url: str, parent: AcmeObject | None = None, **additional_fields) -> dict:
         return dict(parent=parent, url=response_url)
+
+    convert_table: ClassVar[dict]
+    @classmethod
+    def convert_dict(cls, d: dict) -> dict:
+        for key in cls.convert_table.keys():
+            if key in d.keys():
+                if type(d[key]) == str:
+                    d[key] = cls.convert_table[key](d[key])
+                elif type(d[key]) == list:
+                    new_list = list()
+                    for s in d[key]:
+                        if type(s) == str:
+                            new_list.append(cls.convert_table[key](s))
+                        else:
+                            new_list.append(s)
+                    d[key] = new_list
+        return d
+
 
     @classmethod
     async def get_from_url(cls, parent_object: AcmeObject, url: str, **additional_fields) -> Self:
         data, status, location = await parent_object.account.post(url=url, payload=None)
         assert status == cls.request_return_code
+        data = cls.convert_dict(data)
         data.update(cls.complete_dict(parent=parent_object, response_url=url, **additional_fields))
         return cls(**data)
 
