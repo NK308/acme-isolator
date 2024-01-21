@@ -29,16 +29,19 @@ class ACME_Object(ABC):
         cls.url_class = type(f"{cls.__name__}Url", (AcmeUrlBase,), dict(outer_class=cls))
 
     @property
-    def account(self):
-        return self.parent.account()
+    def account(self) -> ACME_Account:
+        return self.parent.account
+
+    @staticmethod
+    async def complete_dict(parent: AcmeObject, response_url: str, **additional_fields) -> dict:
+        return dict(parent=parent, url=response_url)
 
     @classmethod
-    async def get_from_url(cls, parent_object: "ACME_Object", url: str) -> Self:
-        data, status = await parent_object.account.request(url, None)
-        if status == 200 or status == 201:
-            return cls(url=url, parent=parent_object, **data)
-        else:
-            raise ConnectionError(f"Server returned status code {status} while fetching {cls.__name__} from {url}.")
+    async def get_from_url(cls, parent_object: AcmeObject, url: str, **additional_fields) -> Self:
+        data, status, location = await parent_object.account.post(url=url, payload=None)
+        assert status == cls.request_return_code
+        data.update(cls.complete_dict(parent=parent_object, response_url=url, **additional_fields))
+        return cls(**data)
 
     def update_list(self, field_list: list[str | Self], update_list: list[str]) -> list[str | Self]:
         for e in update_list:
