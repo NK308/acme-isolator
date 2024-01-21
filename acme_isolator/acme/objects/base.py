@@ -3,8 +3,6 @@ from abc import ABC
 from dataclasses import dataclass, fields
 from typing import Self, Union, TypeVar, ClassVar
 
-from ..request.jws import JwsKid
-
 AcmeUrl = TypeVar("AcmeUrl", bound="AcmeUrlBase")
 AcmeObject = TypeVar("AcmeObject", bound="ACME_Object")
 ACME_Account = TypeVar("ACME_Account", bound="ACME_Object")
