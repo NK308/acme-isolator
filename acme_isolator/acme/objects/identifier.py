@@ -1,11 +1,12 @@
 from abc import ABC
 from .base import ACME_Object
 from dataclasses import dataclass, field
+from typing import ClassVar
 
 
 @dataclass(order=False, kw_only=True)
 class ACME_Identifier(ACME_Object):
-    type: str = field(init=False)
+    type: ClassVar[str]
     value: str
 
     def __call__(self) -> str:
@@ -21,4 +22,4 @@ class ACME_Identifier(ACME_Object):
 
 
 class ACME_Identifier_DNS(ACME_Identifier):
-    type: str = field(default="dns", init=False)
+    type: ClassVar[str] = "dns"
