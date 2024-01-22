@@ -1,8 +1,7 @@
-from .base import ACME_Object, ClassVar
+from .base import ACME_Object, ACME_List, ClassVar
 from .identifier import ACME_Identifier
 from .authorization import ACME_Authorization
 from dataclasses import dataclass, field, InitVar
-from collections.abc import Sequence
 from asyncio import gather, create_task
 
 
@@ -34,31 +33,6 @@ class ACME_Order(ACME_Object):
                     self.certificate = value
 
 
-@dataclass(order=False, kw_only=True)
-class ACME_Orders(ACME_Object, Sequence):
-    orders: list[ACME_Order | ACME_Order.url_class]
-
-    convert_table: ClassVar[dict] = {"orders": ACME_Order.url_class}
-
-    def __getitem__(self, i):
-        return self.orders[i]
-
-    def __len__(self):
-        return len(self.orders)
-
-    def __iter__(self):
-        return self.orders.__iter__()
-
-    async def update(self):
-        data, status = await self.parent.request(self.url, None)
-        if status == 200:
-            new_list = data["orders"]
-            self.orders = self.update_list(self.orders, data["orders"])
-        else:
-            raise ConnectionError(f"Server returned status code {status} while fetching orders from {self.url}.")
-
-    async def update_orders(self):
-        new_objects = gather(*[ACME_Order.get_from_url(self, url) for url in self.orders if type(url) == str])
-        updates = gather(*[order.update() for order in self.orders if type(order) == ACME_Order])
-        self.orders.extend((await gather(new_objects, updates))[0])
-
+@dataclass
+class ACME_Orders(ACME_List[ACME_Order]):
+    pass

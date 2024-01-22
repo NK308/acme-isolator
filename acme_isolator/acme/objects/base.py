@@ -1,10 +1,12 @@
 import json
 from abc import ABC
-from dataclasses import dataclass, fields
-from typing import Self, Union, TypeVar, ClassVar
+from collections.abc import Sequence
+from dataclasses import dataclass, fields, field, InitVar
+from typing import Self, Union, TypeVar, ClassVar, Generic, get_args
 
 AcmeUrl = TypeVar("AcmeUrl", bound="AcmeUrlBase")
 AcmeObject = TypeVar("AcmeObject", bound="ACME_Object")
+AcmeElement = TypeVar("AcmeElement", bound="ACME_Object")
 ACME_Account = TypeVar("ACME_Account", bound="ACME_Object")
 
 
@@ -87,4 +89,38 @@ class ACME_Object(ABC):
         self.update_fields(data)
 
 
+@dataclass(order=False, kw_only=True)
+class ElementList(Generic[AcmeElement], Sequence, ABC):
+    _list: list[AcmeObject | AcmeUrl] = field(init=False, default_factory=list)
+    parent: AcmeObject
 
+    objects: InitVar[list]
+    content_type: ClassVar[type(AcmeObject)]
+
+    # convert_table: ClassVar[dict]
+
+    def __init_subclass__(cls, **kwargs):
+        cls.content_type = get_args(cls.__orig_bases__[0])
+
+    def __post_init__(self, objects: list):
+        for element in objects:
+            if element is str:
+                self._list.append(self.content_type.url_class(element))
+            elif element is dict:
+                self._list.append(self.content_type(parent=self.parent, **element))
+            else:
+                raise TypeError(f"List contains element of type {type(element)}")
+
+    def __getitem__(self, i):
+        return self._list[i]
+
+    def __len__(self):
+        return len(self._list)
+
+    def __iter__(self):
+        return self._list.__iter__()
+
+
+@dataclass(order=False, kw_only=True)
+class ACME_List(Generic[AcmeElement], ACME_Object, ElementList[AcmeElement], ABC):
+    pass
