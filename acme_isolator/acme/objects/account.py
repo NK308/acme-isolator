@@ -26,6 +26,7 @@ class ACME_Account(ACME_Object):
     hold_keys: ClassVar[set[str]] = ACME_Object.hold_keys | {"key"}
     convert_table: ClassVar[dict] = {"orders": ACME_Orders.url_class}
 
+    @staticmethod
     def complete_dict(response_url: str, key: JWK, **additional_fields) -> dict:
         d = super().complete_dict(response_url=response_url, **additional_fields)
         d["orders"] = ACME_Orders.url_class(d["orders"])
