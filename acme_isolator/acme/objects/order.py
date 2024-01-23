@@ -18,7 +18,7 @@ class ACME_Order(ACME_Object):
     finalize: str
     certificate: str | None
 
-    def __post_init__(self, identifiers: dict):
+    def __post_init__(self, identifiers: list[dict]):
         self.identifier = [ACME_Identifier.parse(identifier) for identifier in identifiers]
 
     async def update(self):

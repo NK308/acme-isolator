@@ -77,7 +77,7 @@ class ACME_Object(ABC):
 
 @dataclass(order=False, kw_only=True)
 class ElementList(Generic[AcmeElement], Sequence, ABC):
-    _list: list[AcmeObject | AcmeUrl] = field(init=False, default_factory=list)
+    _list: list[AcmeElement | AcmeUrl] = field(init=False, default_factory=list)
     parent: AcmeObject
 
     objects: InitVar[list]
