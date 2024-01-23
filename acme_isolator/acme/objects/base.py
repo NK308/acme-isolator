@@ -62,21 +62,6 @@ class ACME_Object(ABC):
         data.update(cls.complete_dict(parent=parent_object, response_url=url, **additional_fields))
         return cls(**data)
 
-    def update_list(self, field_list: list[str | Self], update_list: list[str]) -> list[str | Self]:
-        for e in update_list:
-            if e in field_list:
-                continue
-            elif e not in [acme.url for acme in field_list if not type(acme) == str]:
-                field_list.append(e)
-        for e in field_list:
-                if type(e) == str and e in update_list:
-                    continue
-                elif type(e) == str and e not in update_list:
-                    field_list.remove(e)
-                elif e.url not in update_list:
-                    field_list.remove(e)
-        return field_list
-
     hold_keys: ClassVar[set] = {"parent"}  # Set of keys, not to be updated by generic update method
 
     def update_fields(self, data: dict):
