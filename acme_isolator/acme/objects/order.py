@@ -35,4 +35,7 @@ class ACME_Order(ACME_Object):
 
 @dataclass
 class ACME_Orders(ACME_List[ACME_Order]):
-    pass  # TODO add method for creating new orders
+    convert_table: ClassVar[dict] = {"orders": ACME_Order}
+
+    orders: InitVar[list[dict]]
+    # TODO add method for creating new orders

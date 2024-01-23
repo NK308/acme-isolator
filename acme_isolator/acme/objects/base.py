@@ -80,23 +80,25 @@ class ElementList(Generic[AcmeElement], Sequence, ABC):
     _list: list[AcmeElement | AcmeUrl] = field(init=False, default_factory=list)
     parent: AcmeObject
 
-    objects: InitVar[list]
+    # objects: InitVar[list] = field(kw_only=False, init=True)
     list_lock: Lock = field(init=False, default_factory=Lock)
     content_type: ClassVar[type(AcmeObject)]
 
-    # convert_table: ClassVar[dict]
+    convert_table: ClassVar[dict]
 
     def __init_subclass__(cls, **kwargs):
         cls.content_type = get_args(cls.__orig_bases__[0])
 
-    def __post_init__(self, objects: list):
-        for element in objects:
-            if element is str:
-                self._list.append(self.content_type.url_class(element))
-            elif element is dict:
-                self._list.append(self.content_type(parent=self.parent, **element))
-            else:
-                raise TypeError(f"List contains element of type {type(element)}")
+    def __post_init__(self, *args, **kwargs):
+        keys = set(self.convert_table.keys()) & set(kwargs.keys())
+        for key in keys:
+            for element in kwargs[key]:
+                if element is str:
+                    self._list.append(self.content_type.url_class(element))
+                elif element is dict:
+                    self._list.append(self.content_type(parent=self.parent, **element))
+                else:
+                    raise TypeError(f"List contains element of type {type(element)}")
 
     def _get_parent(self) -> AcmeObject:
         return self.parent
