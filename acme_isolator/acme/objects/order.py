@@ -8,15 +8,15 @@ from asyncio import gather, create_task
 @dataclass(order=False, kw_only=True)
 class ACME_Order(ACME_Object):
     status: str
-    expires: str
-    identifiers: list[ACME_Identifier] = field(init=False)
+    expires: str | None = None
+    identifiers: list[ACME_Identifier]
     identifiers: InitVar[list[dict]]
-    notBefore: str | None
-    notAfter: str | None
-    error: dict | None
+    notBefore: str | None = None
+    notAfter: str | None = None
+    error: dict | None = None
     authorizations: list[str] | list[ACME_Authorization]
     finalize: str
-    certificate: str | None
+    certificate: str | None = None
 
     def __post_init__(self, identifiers: list[dict]):
         self.identifier = [ACME_Identifier.parse(identifier) for identifier in identifiers]
