@@ -2,7 +2,8 @@ import json
 from abc import ABC
 from collections.abc import Sequence
 from dataclasses import dataclass, fields, field, InitVar
-from typing import Self, Union, TypeVar, ClassVar, Generic, get_args
+from typing import Self, Union, TypeVar, ClassVar, Generic, get_args, Coroutine
+from asyncio import gather, Lock
 
 AcmeUrl = TypeVar("AcmeUrl", bound="AcmeUrlBase")
 AcmeObject = TypeVar("AcmeObject", bound="ACME_Object")
@@ -80,6 +81,7 @@ class ElementList(Generic[AcmeElement], Sequence, ABC):
     parent: AcmeObject
 
     objects: InitVar[list]
+    list_lock: Lock = field(init=False, default_factory=Lock)
     content_type: ClassVar[type(AcmeObject)]
 
     # convert_table: ClassVar[dict]
@@ -96,6 +98,28 @@ class ElementList(Generic[AcmeElement], Sequence, ABC):
             else:
                 raise TypeError(f"List contains element of type {type(element)}")
 
+    def _get_parent(self) -> AcmeObject:
+        return self.parent
+
+    async def request_element(self, element: AcmeUrl) -> AcmeElement:
+        return await element.outer_class.get_from_url(parent_object=self._get_parent(), url=element)
+
+    async def request_all_elements(self):
+        with self.list_lock:
+            temp_list = list()
+            todo: list[Coroutine] = list()
+            for element in self._list:
+                if isinstance(element, ACME_Object):
+                    temp_list.append(element)
+                elif isinstance(element, AcmeUrlBase):
+                    todo.append(self.request_element(element))
+            new_elements = await gather(*todo)
+            self._list = temp_list + new_elements
+
+    async def update_all_elements(self):
+        with self.list_lock:
+            raise NotImplementedError  # TODO implement
+
     def __getitem__(self, i):
         return self._list[i]
 
@@ -108,4 +132,5 @@ class ElementList(Generic[AcmeElement], Sequence, ABC):
 
 @dataclass(order=False, kw_only=True)
 class ACME_List(Generic[AcmeElement], ACME_Object, ElementList[AcmeElement], ABC):
-    pass
+    def _get_parent(self) -> AcmeObject:
+        return self
