@@ -21,7 +21,7 @@ class ACME_Order(ACME_Object):
     def __post_init__(self, identifiers: list[dict]):
         self.identifier = [ACME_Identifier.parse(identifier) for identifier in identifiers]
 
-    async def update(self):
+    async def update(self):  # TODO rewrite/remove
         data, status = await self.parent.parent.request(self.url, None)
         if status == 200:
             for key, value in data.items():
@@ -35,4 +35,4 @@ class ACME_Order(ACME_Object):
 
 @dataclass
 class ACME_Orders(ACME_List[ACME_Order]):
-    pass
+    pass  # TODO add method for creating new orders
