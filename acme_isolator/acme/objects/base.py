@@ -15,7 +15,7 @@ class AcmeUrlBase(str, ABC):
     outer_class: ClassVar[type(AcmeObject)]
 
     async def request_object(self, parent: AcmeObject) -> AcmeObject:  #TODO more specific type hinting
-        return self.outer_class.get_from_url(parent_object=parent, url=str(self))
+        return await self.outer_class.get_from_url(parent_object=parent, url=str(self))
 
 
 @dataclass(order=False, kw_only=True)
