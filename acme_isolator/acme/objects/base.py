@@ -66,8 +66,16 @@ class ACME_Object(ABC):
     hold_keys: ClassVar[set] = {"parent"}  # Set of keys, not to be updated by generic update method
 
     def update_fields(self, data: dict):
-        field_keys = {field.name for field in fields(self)} & set(data.keys()) - self.__class__.hold_keys
-        self.__dict__.update({k: v for k, v in data.items() if k in field_keys})
+        keys = {f.name for f in fields(self)} & set(data.keys()) - self.__class__.hold_keys
+        for key in keys:
+            if self.__dict__[key] is None or type(self.__dict__[key]) == str:
+                self.__dict__[key] = data[key]
+            elif isinstance(self.__dict__[key], AcmeUrlBase) and dict[key] == str(self.__dict__[key]):
+                self.__dict__[key] = type(self.__dict__[key])(data[key])
+            elif isinstance(self.__dict__[key], ElementList) and not isinstance(self.__dict__[key], ACME_List):
+                pass  # special case: update list content
+            elif isinstance(self.__dict__[key], ACME_Object):
+                assert data[key] == self.__dict__[key].url
 
     async def get_update(self):
         data, status, location = await self.account.post(url=self.url, payload=None)
