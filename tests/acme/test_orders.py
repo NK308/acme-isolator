@@ -11,9 +11,9 @@ class TestOrderCreation:
     @pytest.mark.pebble
     @pytest.mark.asyncio
     async def test_order_list(self, pebble_session):
-        assert type(pebble_session.orders) == ACME_Orders.url_class
+        assert type(pebble_session.orders) is ACME_Orders.url_class
         pebble_session.orders = await pebble_session.orders.request_object(parent=pebble_session)
-        assert type(pebble_session.orders) == ACME_Orders
+        assert type(pebble_session.orders) is ACME_Orders
 
     @pytest.mark.pebble
     @pytest.mark.asyncio
@@ -21,4 +21,4 @@ class TestOrderCreation:
         pebble_session.orders = await pebble_session.orders.request_object(parent=pebble_session)
         identifiers = [ACME_Identifier_DNS(value="not-my.domain.com")]
         order = await pebble_session.orders.create_order(identifiers=identifiers)
-        assert type(order) == ACME_Order
+        assert type(order) is ACME_Order
