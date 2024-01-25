@@ -116,11 +116,15 @@ class ElementList(Generic[AcmeElement], Sequence, ABC):
                 elif isinstance(element, AcmeUrlBase):
                     todo.append(self.request_element(element))
             new_elements = await gather(*todo)
-            self._list = temp_list + new_elements
+            self._list = temp_list + list(new_elements)
 
     async def update_all_elements(self):
         with self.list_lock:
-            raise NotImplementedError  # TODO implement
+            tasks: list[Coroutine] = list()
+            for element in self._list:
+                if isinstance(element, ACME_Object):
+                    tasks.append(element.get_update())
+            await gather(*tasks)
 
     def __getitem__(self, i):
         return self._list[i]
@@ -134,5 +138,10 @@ class ElementList(Generic[AcmeElement], Sequence, ABC):
 
 @dataclass(order=False, kw_only=True)
 class ACME_List(Generic[AcmeElement], ACME_Object, ElementList[AcmeElement], ABC):
+    hold_keys: ClassVar[set] = ACME_Object.hold_keys | {"list", "list_lock"}
+
     def _get_parent(self) -> AcmeObject:
         return self
+
+    async def get_update(self):
+        await self.update_all_elements()
