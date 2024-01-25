@@ -77,7 +77,7 @@ class ACME_Object(ABC):
             elif isinstance(self.__dict__[key], ACME_Object):
                 assert data[key] == self.__dict__[key].url
 
-    async def get_update(self):
+    async def get_update(self):  # TODO maybe adding an recursive option probably has to be combined with lock
         data, status, location = await self.account.post(url=self.url, payload=None)
         assert status == 200
         self.update_fields(data)
