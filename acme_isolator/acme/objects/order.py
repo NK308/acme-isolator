@@ -22,16 +22,7 @@ class ACME_Order(ACME_Object):
     def __post_init__(self, identifiers: list[dict]):
         self.identifiers = [ACME_Identifier.parse(identifier) for identifier in identifiers]
 
-    async def update(self):  # TODO rewrite/remove
-        data, status = await self.parent.parent.request(self.url, None)
-        if status == 200:
-            for key, value in data.items():
-                if key == "status":
-                    self.status = value
-                elif key == "finalize":
-                    self.finalize = value
-                elif key == "certificate":
-                    self.certificate = value
+    # TODO finalize order
 
 
 @dataclass
