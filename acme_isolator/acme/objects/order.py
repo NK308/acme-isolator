@@ -1,7 +1,7 @@
 from .base import ACME_Object, ACME_List, ClassVar
 from .exceptions import UnexpectedResponseException
 from .identifier import ACME_Identifier
-from .authorization import ACME_Authorization
+from .authorization import ACME_Authorization, ACME_Authorizations
 from dataclasses import dataclass, field, InitVar
 from asyncio import gather, create_task
 
@@ -10,17 +10,21 @@ from asyncio import gather, create_task
 class ACME_Order(ACME_Object):
     status: str
     expires: str | None = None
+    authorizations: ACME_Authorizations
+    authorizations: InitVar[list[dict]]
     identifiers: list[ACME_Identifier]
     identifiers: InitVar[list[dict]]
     notBefore: str | None = None
     notAfter: str | None = None
     error: dict | None = None
-    authorizations: list[str] | list[ACME_Authorization]
     finalize: str
     certificate: str | None = None
 
-    def __post_init__(self, identifiers: list[dict]):
+    convert_table: ClassVar[dict] = {"authorizations": ACME_Authorizations}
+
+    def __post_init__(self, authorizations: list[dict], identifiers: list[dict]):
         self.identifiers = [ACME_Identifier.parse(identifier) for identifier in identifiers]
+        self.authorizations = ACME_Authorizations(*authorizations, parent=self.parent)
 
     # TODO finalize order
 
