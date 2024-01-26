@@ -1,3 +1,4 @@
+from enum import Enum
 from .base import ACME_Object, ACME_List, ClassVar
 from .exceptions import UnexpectedResponseException
 from .identifier import ACME_Identifier
@@ -6,9 +7,18 @@ from dataclasses import dataclass, field, InitVar
 from asyncio import gather, create_task
 
 
+class OrderStatus(Enum):
+    PENDING = "pending"
+    READY = "ready"
+    PROCESSING = "processing"
+    VALID = "valid"
+    INVALID = "invalid"
+
+
 @dataclass(order=False, kw_only=True)
 class ACME_Order(ACME_Object):
-    status: str
+    status: OrderStatus
+    status: InitVar[str]
     expires: str | None = None
     authorizations: ACME_Authorizations
     authorizations: InitVar[list[dict]]
@@ -19,8 +29,6 @@ class ACME_Order(ACME_Object):
     error: dict | None = None
     finalize: str
     certificate: str | None = None
-
-    convert_table: ClassVar[dict] = {"authorizations": ACME_Authorizations}
 
     def __post_init__(self, authorizations: list[dict], identifiers: list[dict]):
         self.identifiers = [ACME_Identifier.parse(identifier) for identifier in identifiers]

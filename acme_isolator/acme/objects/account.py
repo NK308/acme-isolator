@@ -1,26 +1,31 @@
 import json
+from enum import Enum
 
 from .exceptions import UnexpectedResponseException, ACME_ProblemException
 from .base import ACME_Object, ClassVar, AcmeObject
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, InitVar
 from .order import ACME_Orders
 from ..request.session import Session
 from ..request import JwsBase, JwsKid, JwsJwk, JwsRolloverRequest
 from jwcrypto.jwk import JWK
 import sys
 
-ACCOUNT_VALID = "valid"
-ACCOUNT_DEACTIVATED = "deactivated"
-ACCOUNT_REVOkED = "revoked"
+
+class AccountStatus(Enum):
+    VALID = "valid"
+    DEACTIVATED = "deactivated"
+    REVOKED = "revoked"
 
 
 @dataclass(order=False, kw_only=True)
 class ACME_Account(ACME_Object):
     key: JWK
     session: Session
-    status: str
+    status: AccountStatus
+    status: InitVar[str]
     contact: list[str] | None
     orders: ACME_Orders | ACME_Orders.url_class
+    orders: InitVar[str]
     parent: None = field(default=None, init=False)
 
     hold_keys: ClassVar[set[str]] = ACME_Object.hold_keys | {"key"}
