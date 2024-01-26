@@ -1,8 +1,9 @@
 import json
+from types import UnionType, NoneType
 from abc import ABC
 from collections.abc import Sequence
-from dataclasses import dataclass, fields, field, InitVar
-from typing import Self, Union, TypeVar, ClassVar, Generic, get_args, Coroutine
+from dataclasses import dataclass, fields, field, InitVar, Field
+from typing import Self, Union, TypeVar, ClassVar, Generic, get_origin, get_args, Coroutine, Any, Optional
 from asyncio import gather, Lock
 
 AcmeUrl = TypeVar("AcmeUrl", bound="AcmeUrlBase")
@@ -24,6 +25,7 @@ class ACME_Object(ABC):
     parent: Union["ACME_Object", None]
 
     url_class: ClassVar[type(AcmeUrl)]
+    hold_keys: ClassVar[set] = {"parent", "url"}  # Set of keys, not to be updated by generic update method
     request_return_code: ClassVar[int] = 200
 
     def __init_subclass__(cls, **kwargs):
@@ -34,48 +36,83 @@ class ACME_Object(ABC):
         return self.parent.account
 
     @staticmethod
-    def complete_dict(response_url: str, parent: AcmeObject | None = None, **additional_fields) -> dict:
-        return dict(parent=parent, url=response_url)
+    def check_acme_union(t) -> tuple[bool, type | None]:  # check, if type variable describes a version of ACME_Object | AcmeUrl
+        if get_origin(t) is Union:
+            l = get_args(t)
+            if len(l) == 2:
+                if any([issubclass(e, ACME_Object) for e in l]) and any([issubclass(e, AcmeUrlBase) for e in l]):
+                    if issubclass(l[0], ACME_Object):
+                        c = l[1]
+                    else:
+                        c = l[0]
+                    return True, c
+        return False, None
 
-    convert_table: ClassVar[dict]
+    @staticmethod
+    def check_optional_type(t):
+        if get_origin(t) is UnionType:
+            l = get_args(t)
+            if NoneType in l and len(l) == 2:
+                if l[0] is None:
+                    return l[1]
+                else:
+                    return l[0]
+            elif None in l and len(l) != 2:
+                raise NotImplementedError("Union of None and >1 other types not handled")
+            else:
+                return l
+        elif get_origin(t) is Optional:
+            return get_args(t)[0]
+        else:
+            return t
 
-    @classmethod
-    def convert_dict(cls, d: dict) -> dict:
-        for key in cls.convert_table.keys():
-            if key in d.keys():
-                if isinstance(d[key], str):
-                    d[key] = cls.convert_table[key](d[key])
-                elif isinstance(d[key], list):
-                    new_list = list()
-                    for s in d[key]:
-                        if isinstance(s, str):
-                            new_list.append(cls.convert_table[key](s))
-                        else:
-                            new_list.append(s)
-                    d[key] = new_list
-        return d
+    def update_field(self, f: Field, d: Any):
+        key = f.name
+        if key in self.hold_keys:
+            return
+        t = self.check_optional_type(f.type)
+        v:f.type = self.__dict__.get(key, None)
+        u, i = self.check_acme_union(t)
+        if type(d) is str and t is str:
+            # field should be a plain string
+            self.__dict__[key] = d
+        elif u and type(d) is str:
+            if isinstance(v, ACME_Object):
+                # field already contains acme object and its url matches the string
+                assert v.url == d
+            else:
+                # field should ACME object/url not yet a requested object and str is given and transformed into url object
+                self.__dict__[key] = i(d)
+        elif type(t) is type:
+            if issubclass(t, ElementList):
+                if v is None:
+                    # object seems to be in __post_init__ generate new ElementList
+                    pass  # TODO
+                else:
+                    # ElementList should be updated with list of dicts
+                    pass  # TODO
+            else:
+                self.__dict__[key] = t(d)
+        else:
+            self.__dict__[key] = d
+
+    def __post_init__(self, *args, **kwargs):
+        self.update_fields(kwargs)
+
+    def update_fields(self, data: dict):
+        for key in data.keys():
+            for f in fields(self):
+                if f.name == key:
+                    self.update_field(f, data[key])
+                    break
 
     @classmethod
     async def get_from_url(cls, parent_object: AcmeObject, url: str, **additional_fields) -> Self:
         data, status, location = await parent_object.account.post(url=url, payload=None)
         assert status == cls.request_return_code
-        data = cls.convert_dict(data)
-        data.update(cls.complete_dict(parent=parent_object, response_url=url, **additional_fields))
+        data.update({"parent":parent_object, "response_url":url})
+        data.update(additional_fields)
         return cls(**data)
-
-    hold_keys: ClassVar[set] = {"parent"}  # Set of keys, not to be updated by generic update method
-
-    def update_fields(self, data: dict):
-        keys = {f.name for f in fields(self)} & set(data.keys()) - self.__class__.hold_keys
-        for key in keys:
-            if self.__dict__[key] is None or type(self.__dict__[key]) == str:
-                self.__dict__[key] = data[key]
-            elif isinstance(self.__dict__[key], AcmeUrlBase) and dict[key] == str(self.__dict__[key]):
-                self.__dict__[key] = type(self.__dict__[key])(data[key])
-            elif isinstance(self.__dict__[key], ElementList) and not isinstance(self.__dict__[key], ACME_List):
-                pass  # special case: update list content
-            elif isinstance(self.__dict__[key], ACME_Object):
-                assert data[key] == self.__dict__[key].url
 
     async def get_update(self):  # TODO maybe adding an recursive option probably has to be combined with lock
         data, status, location = await self.account.post(url=self.url, payload=None)
