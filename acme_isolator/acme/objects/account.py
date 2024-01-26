@@ -29,13 +29,6 @@ class ACME_Account(ACME_Object):
     parent: None = field(default=None, init=False)
 
     hold_keys: ClassVar[set[str]] = ACME_Object.hold_keys | {"key"}
-    convert_table: ClassVar[dict] = {"orders": ACME_Orders.url_class}
-
-    @staticmethod
-    def complete_dict(response_url: str, key: JWK, **additional_fields) -> dict:
-        d = super().complete_dict(response_url=response_url, **additional_fields)
-        d["orders"] = ACME_Orders.url_class(d["orders"])
-        return d
 
     async def request(self, url: str, payload: dict | None):
         nonce = await self.session.nonce_pool.get_nonce()
@@ -43,14 +36,14 @@ class ACME_Account(ACME_Object):
         return await self.session.post(url, payload=request_builder.build())
 
     async def fetch_orders(self):
-        if type(self.orders) == str:
+        if type(self.orders) is ACME_Orders.url_class:
             url = self.orders
             data, status = await self.request(url, None)
             if status == 200:
                 self.orders = ACME_Orders(url=url, parent=self, **data)
             else:
                 raise UnexpectedResponseException(status, data )
-        elif type(self.orders) == ACME_Orders:
+        elif type(self.orders) is ACME_Orders:
             await self.orders.update()
         await self.orders.update_orders()
 
@@ -70,7 +63,7 @@ class ACME_Account(ACME_Object):
         req = JwsJwk(payload=payload, key=key, url=url)
         try:
             resp, status, location = await session.post(req)
-            data = cls.convert_dict(resp.copy())
+            data = resp.copy()
             data.update({"key": key, "url": location})
             return ACME_Account(session=session, **data)
         except AssertionError:
@@ -84,7 +77,7 @@ class ACME_Account(ACME_Object):
         try:
             resp, status, location = await session.post(req)
             assert status == 200
-            data = cls.convert_dict(resp.copy())
+            data = resp.copy()
             data.update({"key": key, "url": location})
             return ACME_Account(session=session, **data)
         except AssertionError:
