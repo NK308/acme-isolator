@@ -1,7 +1,8 @@
 import json
+from enum import Enum
 
 from .exceptions import UnexpectedResponseException, ACME_ProblemException
-from .base import ACME_Object, ClassVar, AcmeObject
+from .base import ACME_Object, ClassVar, AcmeObject, AcmeDescriptor, StatusDescriptor
 from dataclasses import dataclass, field
 from .order import ACME_Orders
 from ..request.session import Session
@@ -9,18 +10,20 @@ from ..request import JwsBase, JwsKid, JwsJwk, JwsRolloverRequest
 from jwcrypto.jwk import JWK
 import sys
 
-ACCOUNT_VALID = "valid"
-ACCOUNT_DEACTIVATED = "deactivated"
-ACCOUNT_REVOkED = "revoked"
+
+class AccountStatus(Enum):
+    ACCOUNT_VALID = "valid"
+    ACCOUNT_DEACTIVATED = "deactivated"
+    ACCOUNT_REVOKED = "revoked"
 
 
 @dataclass(order=False, kw_only=True)
 class ACME_Account(ACME_Object):
     key: JWK
     session: Session
-    status: str
+    status: AccountStatus = field(default=StatusDescriptor(AccountStatus))
     contact: list[str] | None
-    orders: ACME_Orders | ACME_Orders.url_class
+    orders: ACME_Orders | ACME_Orders.url_class = field(default=AcmeDescriptor(ACME_Orders))
     parent: None = field(default=None, init=False)
 
     hold_keys: ClassVar[set[str]] = ACME_Object.hold_keys | {"key"}
@@ -65,7 +68,7 @@ class ACME_Account(ACME_Object):
         req = JwsJwk(payload=payload, key=key, url=url)
         try:
             resp, status, location = await session.post(req)
-            data = cls.convert_dict(resp.copy())
+            data = resp.copy()
             data.update({"key": key, "url": location})
             return ACME_Account(session=session, **data)
         except AssertionError:
@@ -79,7 +82,7 @@ class ACME_Account(ACME_Object):
         try:
             resp, status, location = await session.post(req)
             assert status == 200
-            data = cls.convert_dict(resp.copy())
+            data = resp.copy()
             data.update({"key": key, "url": location})
             return ACME_Account(session=session, **data)
         except AssertionError:
