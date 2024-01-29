@@ -1,7 +1,7 @@
 import json
 from abc import ABC
-from collections.abc import Sequence
-from dataclasses import dataclass, fields, field, InitVar
+from collections.abc import MutableSet
+from dataclasses import dataclass, fields, field
 from typing import Self, Union, TypeVar, ClassVar, Generic, get_args, Coroutine
 from asyncio import gather, Lock
 
@@ -111,20 +111,18 @@ class StatusDescriptor:
 
 
 @dataclass(order=False, kw_only=True)
-class ElementList(Generic[AcmeElement], Sequence, ABC):
+class ElementList(Generic[AcmeElement], MutableSet, ABC):
     _list: list[AcmeElement | AcmeUrl] = field(init=False, default_factory=list)
     parent: AcmeObject
 
-    # objects: InitVar[list] = field(kw_only=False, init=True)
     list_lock: Lock = field(init=False, default_factory=Lock)
     content_type: ClassVar[type(AcmeObject)]
 
-    convert_table: ClassVar[dict] = dict()
 
     def __init_subclass__(cls, **kwargs):
         cls.content_type = get_args(cls.__orig_bases__[0])
 
-    def __post_init__(self, *args, **kwargs):
+    def __post_init__(self, *args, **kwargs):  # TODO remove most of this method
         keys = set(self.convert_table.keys()) & set(kwargs.keys())
         for key in keys:
             for element in kwargs[key]:
@@ -142,6 +140,53 @@ class ElementList(Generic[AcmeElement], Sequence, ABC):
             else:
                 raise TypeError(f"List contains element of type {type(element)}")
 
+    def __find_element(self, value) -> int:
+        if type(value) is self.content_type:
+            url = value.url
+        elif type(value) is self.content_type.url_class:
+            url = str(value)
+        else:
+            return None
+        for i in range(len(self._list)):
+            e = self._list[i]
+            if type(e) is self.content_type and url == e.url:
+                return i
+            elif type(e) is self.content_type.url_class and url == str(e):
+                return i
+        return None
+
+
+    def __contains__(self, item):
+        return self.__find_element(item) is not None
+
+    def __iter__(self):
+        self._list.__iter__()
+
+    def __len__(self):
+        return len(self._list)
+
+    def add(self, value):
+        if value not in self:
+            if type(value) is self.content_type or value in self and type(value) is self.content_type:
+                self._list.append(value)
+            elif type(value) is str:
+                self._list.append(self.content_type.url_class(value))
+            else:
+                raise ValueError(f"Class {self.__class__.__name__} does no accept objects of type {type(value)}")
+        elif type(value) is self.content_type:
+            i = self.__find_element(value)
+            if type(self._list[i]) is self.content_type.url_class:
+                del self._list[i]
+                self._list.append(value)
+            else:
+                raise NotImplementedError("Total replacement of complete ACME_Object not implemented")
+        elif type(value) is self.content_type.url_class | str:
+            pass
+        else:
+            raise ValueError(f"Class {self.__class__.__name__} does no accept objects of type {type(value)}")
+
+    def remove(self, value):
+        pass  #TODO implement
 
     def _get_parent(self) -> AcmeObject:
         return self.parent
