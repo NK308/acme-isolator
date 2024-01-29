@@ -36,31 +36,11 @@ class ACME_Object(ABC):
     @staticmethod
     def complete_dict(response_url: str, parent: AcmeObject | None = None, **additional_fields) -> dict:
         return dict(parent=parent, url=response_url)
-
-    convert_table: ClassVar[dict]
-
-    @classmethod
-    def convert_dict(cls, d: dict) -> dict:
-        for key in cls.convert_table.keys():
-            if key in d.keys():
-                if isinstance(d[key], str):
-                    d[key] = cls.convert_table[key](d[key])
-                elif isinstance(d[key], list):
-                    new_list = list()
-                    for s in d[key]:
-                        if isinstance(s, str):
-                            new_list.append(cls.convert_table[key](s))
-                        else:
-                            new_list.append(s)
-                    d[key] = new_list
-        return d
-
     @classmethod
     async def get_from_url(cls, parent_object: AcmeObject, url: str, **additional_fields) -> Self:
         data, status, location = await parent_object.account.post(url=url, payload=None)
         assert status == cls.request_return_code
-        data = cls.convert_dict(data)
-        data.update(cls.complete_dict(parent=parent_object, response_url=url, **additional_fields))
+        data.update({"parent": parent_object, "url": url})
         return cls(**data)
 
     hold_keys: ClassVar[set] = {"parent"}  # Set of keys, not to be updated by generic update method
@@ -68,19 +48,66 @@ class ACME_Object(ABC):
     def update_fields(self, data: dict):
         keys = {f.name for f in fields(self)} & set(data.keys()) - self.__class__.hold_keys
         for key in keys:
-            if self.__dict__[key] is None or type(self.__dict__[key]) == str:
+            if key in self.__class__.__dict__.keys():
+                self.__class__.__dict__[key].__set__(self, data[key])
+            else:
                 self.__dict__[key] = data[key]
-            elif isinstance(self.__dict__[key], AcmeUrlBase) and dict[key] == str(self.__dict__[key]):
-                self.__dict__[key] = type(self.__dict__[key])(data[key])
-            elif isinstance(self.__dict__[key], ElementList) and not isinstance(self.__dict__[key], ACME_List):
-                pass  # special case: update list content
-            elif isinstance(self.__dict__[key], ACME_Object):
-                assert data[key] == self.__dict__[key].url
 
     async def get_update(self):  # TODO maybe adding an recursive option probably has to be combined with lock
         data, status, location = await self.account.post(url=self.url, payload=None)
         assert status == 200
-        self.update_fields(data)
+    #    ** kwargs       self.update_fields(data)
+
+
+class AcmeDescriptor:
+    def __init__(self, subclass: type):
+        if issubclass(subclass, ACME_Object):
+            self.type = subclass
+        else:
+            raise ValueError("Type has to be a subclass of ACME_Object")
+
+    def __set_name__(self, owner, name):
+        self.name = name
+
+    def __get__(self, instance, insttype = None):
+        return instance.dict[self.name]
+
+    def __set__(self, instance, value):
+        if value is self:
+            raise ValueError(f"Field {self.name} has not been provided to __init__ of {self.type}.")
+        if isinstance(instance.__dict__.get(self.name, None), self.type):
+            if isinstance(value, str):
+                if not instance.__dict__[self.name].url == str(value):
+                    raise NotImplementedError(f"URL from object has changed from {instance.__dict__[self.name].url} to {value}.")  # TODO maybe handle change of acme object after update from server
+            elif type(value) is self.type:
+                if not instance.__dict__[self.name].url == value.url:
+                    raise NotImplementedError(f"URL from object has changed from {instance.__dict__[self.name].url} to {value.url}.")  # TODO maybe handle change of acme object after update from server
+            else:
+                raise ValueError(f"Field can only take vales of the types str | {self.type.__name__} | {self.type.url_class.__name__}")
+        else:
+            if type(value) is str:
+                instance.__dict__[self.name] = self.type.url_class(value)
+            elif type(value) is self.type.url_class | self.type:
+                instance.__dict__[self.name] = value
+            else:
+                raise ValueError(f"Field can only take vales of the types str | {self.type.__name__} | {self.type.url_class.__name__}")
+
+
+class StatusDescriptor:
+    def __init__(self, enumType: type, name = "status"):
+        self.type = enumType
+        self.name = "status"
+
+    def __set__(self, instance, value):
+        if type(value) is str:
+            instance.__dict__[self.name] = self.type(value)
+        elif type(value) is self.type:
+            instance.__dict__[self.name] = value
+        else:
+            raise ValueError(f"Type {type(value).__name__} not supported for field {self.name}.")
+
+    def __get__(self, instance, owner):
+        return instance.__dict__[self.name]
 
 
 @dataclass(order=False, kw_only=True)
