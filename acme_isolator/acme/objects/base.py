@@ -224,15 +224,6 @@ class ElementList(Generic[AcmeElement], MutableSet, ABC):
                     tasks.append(element.get_update())
             await gather(*tasks)
 
-    def __getitem__(self, i):
-        return self._list[i]
-
-    def __len__(self):
-        return len(self._list)
-
-    def __iter__(self):
-        return self._list.__iter__()
-
 
 @dataclass(order=False, kw_only=True)
 class ACME_List(Generic[AcmeElement], ACME_Object, ElementList[AcmeElement], ABC):
