@@ -140,7 +140,7 @@ class ElementList(Generic[AcmeElement], MutableSet, ABC):
             else:
                 raise TypeError(f"List contains element of type {type(element)}")
 
-    def __find_element(self, value) -> int:
+    def __find_element(self, value) -> int | None:
         if type(value) is self.content_type:
             url = value.url
         elif type(value) is self.content_type.url_class:
@@ -186,7 +186,17 @@ class ElementList(Generic[AcmeElement], MutableSet, ABC):
             raise ValueError(f"Class {self.__class__.__name__} does no accept objects of type {type(value)}")
 
     def remove(self, value):
-        pass  #TODO implement
+        e = self.__find_element(value)
+        if e is not None:
+            del self._list[e]
+        else:
+            raise KeyError(f"Key with url representation {value.url if type(value) is self.content_type else str(value)} does not exist.")
+
+    def discard(self, value):
+        try:
+            self.remove(value)
+        except KeyError:
+            pass
 
     def _get_parent(self) -> AcmeObject:
         return self.parent
