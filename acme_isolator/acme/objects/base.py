@@ -1,4 +1,3 @@
-import json
 from abc import ABC
 from collections.abc import MutableSet
 from dataclasses import dataclass, fields, field, InitVar
@@ -14,7 +13,7 @@ ACME_Account = TypeVar("ACME_Account", bound="ACME_Object")
 class AcmeUrlBase(str, ABC):
     outer_class: ClassVar[type(AcmeObject)]
 
-    async def request_object(self, parent: AcmeObject) -> AcmeObject:  #TODO more specific type hinting
+    async def request_object(self, parent: AcmeObject) -> AcmeObject:
         return await self.outer_class.get_from_url(parent_object=parent, url=str(self))
 
 

@@ -30,6 +30,4 @@ class ACME_Authorization(ACME_Object):
 
 @dataclass
 class ACME_Authorizations(ElementList[ACME_Authorization]):
-    # convert_table: ClassVar[dict] = {"authorizations": ACME_Authorization}
-
     pass

@@ -28,8 +28,6 @@ class ACME_Order(ACME_Object):
     finalize: str
     certificate: str | None = None
 
-    convert_table: ClassVar[dict] = {"authorizations": ACME_Authorizations}
-
     def __post_init__(self,identifiers: list[dict]):
         self.identifiers = [ACME_Identifier.parse(identifier) for identifier in identifiers]
 

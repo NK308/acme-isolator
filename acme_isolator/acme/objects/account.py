@@ -27,7 +27,6 @@ class ACME_Account(ACME_Object):
     parent: None = field(default=None, init=False)
 
     hold_keys: ClassVar[set[str]] = ACME_Object.hold_keys | {"key"}
-    convert_table: ClassVar[dict] = {"orders": ACME_Orders.url_class}
 
     @staticmethod
     def complete_dict(response_url: str, key: JWK, **additional_fields) -> dict:
