@@ -70,7 +70,7 @@ class AcmeDescriptor:
         self.name = name
 
     def __get__(self, instance, insttype = None):
-        return instance.dict[self.name]
+        return instance.__dict__[self.name]
 
     def __set__(self, instance, value):
         if value is self:
@@ -87,10 +87,10 @@ class AcmeDescriptor:
         else:
             if type(value) is str:
                 instance.__dict__[self.name] = self.type.url_class(value)
-            elif type(value) is self.type.url_class | self.type:
+            elif type(value) is self.type.url_class or type(value) is self.type:
                 instance.__dict__[self.name] = value
             else:
-                raise ValueError(f"Field can only take vales of the types str | {self.type.__name__} | {self.type.url_class.__name__}")
+                raise ValueError(f"Field can only take vales of the types str | {self.type.__name__} | {self.type.url_class.__name__} and not of type {type(value).__name__}.")
 
 
 class StatusDescriptor:
