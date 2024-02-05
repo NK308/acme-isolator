@@ -120,7 +120,7 @@ class ElementList(Generic[AcmeElement], MutableSet, ABC):
     content_type: ClassVar[type(AcmeObject)]
 
     def __init_subclass__(cls, **kwargs):
-        cls.content_type = get_args(cls.__orig_bases__[0])
+        cls.content_type = get_args(cls.__orig_bases__[0])[0]
 
     def __post_init__(self, items: list):
         for element in items:
@@ -210,3 +210,29 @@ class ElementList(Generic[AcmeElement], MutableSet, ABC):
                     tasks.append(element.get_update())
             await gather(*tasks)
 
+
+class ListDescriptor:
+    def __init__(self, subclass: type):
+        if issubclass(subclass, ElementList):
+            self.type = subclass
+        else:
+            raise ValueError("Type has to be a subclass of ElementList")
+
+    def __get__(self, instance, owner):
+        if self.name in instance.__dict__.keys():
+            l = instance.__dict__[self.name]
+        else:
+            l = self.type([], parent=instance)
+            instance.__dict__[self.name] = l
+            return l
+    def __set__(self, instance, value):
+        if self.name not in instance.__dict__.keys():
+            if type(value) is self.type:
+                instance.__dict__[self.name] = value
+            elif type(value) is list:
+                instance.__dict__[self.name] = self.type(value, parent=instance)
+        else:
+            raise NotImplementedError  # TODO has this to be implemented or should it be an error?
+
+    def __set_name__(self, owner, name):
+        self.name = name
