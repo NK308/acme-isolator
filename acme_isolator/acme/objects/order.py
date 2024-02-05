@@ -1,4 +1,5 @@
-from .base import ACME_Object, ACME_List, ClassVar
+from .base import ACME_Object, ElementList, ClassVar, StatusDescriptor
+from enum import Enum
 from .exceptions import UnexpectedResponseException
 from .identifier import ACME_Identifier
 from .authorization import ACME_Authorization, ACME_Authorizations
@@ -6,9 +7,17 @@ from dataclasses import dataclass, field, InitVar
 from asyncio import gather, create_task
 
 
+class OrderStatus(Enum):
+    ORDER_PENDING = "pending"
+    ORDER_READY = "ready"
+    ORDER_PROCESSING = "processing"
+    ORDER_VALID = "valid"
+    ORDER_INVALID = "invalid"
+
+
 @dataclass(order=False, kw_only=True)
 class ACME_Order(ACME_Object):
-    status: str
+    status: OrderStatus = field(default=StatusDescriptor(OrderStatus))
     expires: str | None = None
     authorizations: ACME_Authorizations
     authorizations: InitVar[list[dict]]
