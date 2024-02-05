@@ -31,5 +31,21 @@ class ACME_Identifier:
             raise ValueError("Unknown/undefined identifier type")
 
 
+class IdentifierDescriptor:
+    def __init__(self, name="identifier"):
+        self.name = name
+
+    def __set__(self, instance, value):
+        if isinstance(value, ACME_Identifier):
+            instance.__dict__[self.name] = value
+        else:
+            instance.__dict__[self.name] = ACME_Identifier.parse(value)
+        # else:
+        #     raise ValueError(f"Type {type(value).__name__} not supported for field {self.name}.")
+
+    def __get__(self, instance, owner):
+        return instance.__dict__[self.name]
+
+
 class ACME_Identifier_DNS(ACME_Identifier):
     type: ClassVar[str] = "dns"

@@ -1,7 +1,7 @@
 from .base import ACME_Object, ElementList, ClassVar, StatusDescriptor
 from enum import Enum
 from .challenge import ACME_Challenge
-from .identifier import ACME_Identifier
+from .identifier import ACME_Identifier, IdentifierDescriptor
 from dataclasses import dataclass, field, InitVar
 
 
@@ -16,8 +16,7 @@ class AuthorizationStatus(Enum):
 
 @dataclass(order=False, kw_only=True)
 class ACME_Authorization(ACME_Object):
-    identifier: ACME_Identifier = field(init=False)
-    identifier: InitVar[dict]
+    identifier: ACME_Identifier = field(default=IdentifierDescriptor())
     status: AuthorizationStatus = field(default=StatusDescriptor(AuthorizationStatus))
     expires: str | None
     challenges: list[ACME_Challenge] | list[dict]
