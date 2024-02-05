@@ -1,7 +1,7 @@
 import json
 from abc import ABC
 from collections.abc import MutableSet
-from dataclasses import dataclass, fields, field
+from dataclasses import dataclass, fields, field, InitVar
 from typing import Self, Union, TypeVar, ClassVar, Generic, get_args, Coroutine
 from asyncio import gather, Lock
 
@@ -110,35 +110,21 @@ class StatusDescriptor:
         return instance.__dict__[self.name]
 
 
-@dataclass(order=False, kw_only=True)
+@dataclass(order=False, kw_only=False)
 class ElementList(Generic[AcmeElement], MutableSet, ABC):
+    items: InitVar[list[AcmeElement | AcmeUrl | str] | None]
     _list: list[AcmeElement | AcmeUrl] = field(init=False, default_factory=list)
-    parent: AcmeObject
+    parent: AcmeObject = field(kw_only=True)
 
     list_lock: Lock = field(init=False, default_factory=Lock)
     content_type: ClassVar[type(AcmeObject)]
 
-
     def __init_subclass__(cls, **kwargs):
         cls.content_type = get_args(cls.__orig_bases__[0])
 
-    def __post_init__(self, *args, **kwargs):  # TODO remove most of this method
-        keys = set(self.convert_table.keys()) & set(kwargs.keys())
-        for key in keys:
-            for element in kwargs[key]:
-                if element is str:
-                    self._list.append(self.content_type.url_class(element))
-                elif element is dict:
-                    self._list.append(self.content_type(parent=self.parent, **element))
-                else:
-                    raise TypeError(f"List contains element of type {type(element)}")
-        for arg in args:
-            if arg is str:
-                self._list.append(self.content_type.url_class(element))
-            elif element is dict:
-                self._list.append(self.content_type(parent=self.parent, **element))
-            else:
-                raise TypeError(f"List contains element of type {type(element)}")
+    def __post_init__(self, items: list):
+        for element in items:
+            self.add(element)
 
     def __find_element(self, value) -> int | None:
         if type(value) is self.content_type:
@@ -224,13 +210,3 @@ class ElementList(Generic[AcmeElement], MutableSet, ABC):
                     tasks.append(element.get_update())
             await gather(*tasks)
 
-
-@dataclass(order=False, kw_only=True)
-class ACME_List(Generic[AcmeElement], ACME_Object, ElementList[AcmeElement], ABC):
-    hold_keys: ClassVar[set] = ACME_Object.hold_keys | {"list", "list_lock"}
-
-    def _get_parent(self) -> AcmeObject:
-        return self
-
-    async def get_update(self):
-        await self.update_all_elements()
