@@ -38,11 +38,23 @@ class ACME_Order(ACME_Object):
     # TODO finalize order
 
 
-@dataclass
-class ACME_Orders(ACME_List[ACME_Order]):
-    convert_table: ClassVar[dict] = {"orders": ACME_Order}
+class OrderSet(ElementList[ACME_Order]):
+    pass
 
-    orders: InitVar[list[dict]]
+@dataclass
+class ACME_Orders(ACME_Object):
+    _order_set: OrderSet = field(init=False)
+
+    orders: InitVar[list[str]]
+
+    def __post_init__(self, orders: list[str]):
+        self._order_set = OrderSet(orders, parent=self)
+        self.__iter__ = self._order_set.__iter__
+        self.__len__ = self._order_set.__len__
+        self.__contains__ = self._order_set.__contains__
+        self.add = self._order_set.add
+        self.remove = self._order_set.remove
+        self.discard = self._order_set.discard
 
     async def create_order(self, identifiers: list[ACME_Identifier], notBefore: str | None = None, notAfter: str | None = None):
         payload = {"notBefore": notBefore, "notAfter": notAfter}
@@ -52,7 +64,7 @@ class ACME_Orders(ACME_List[ACME_Order]):
             assert status == 201
             resp.update({"url": location})
             order = ACME_Order(parent=self, **resp)
-            self._list.append(order)
+            self._order_set.add(order)
             return order
         except AssertionError:
             raise UnexpectedResponseException(status, response=resp).convert_exception()
