@@ -1,7 +1,7 @@
 import json
 
 from .exceptions import UnexpectedResponseException, ACME_ProblemException
-from .base import ACME_Object, ClassVar, AcmeObject
+from .base import ACME_Object, ClassVar, AcmeObject, _object_register
 from .descriptors import AcmeDescriptor, Status, StatusDescriptor
 from dataclasses import dataclass, field
 from .order import ACME_Orders
@@ -69,7 +69,12 @@ class ACME_Account(ACME_Object):
             resp, status, location = await session.post(req)
             data = resp.copy()
             data.update({"key": key, "url": location})
-            return ACME_Account(session=session, **data)
+            if location in _object_register:
+                o = _object_register[location]
+                o.update_fields(data)
+            else:
+                o = ACME_Account(session=session, **data)
+            return o
         except AssertionError:
             raise UnexpectedResponseException(status, resp).convert_exception()
 
@@ -83,7 +88,12 @@ class ACME_Account(ACME_Object):
             assert status == 200
             data = resp.copy()
             data.update({"key": key, "url": location})
-            return ACME_Account(session=session, **data)
+            if location in _object_register:
+                o = _object_register[location]
+                o.update_fields(data)
+            else:
+                o = ACME_Account(session=session, **data)
+            return o
         except AssertionError:
             raise UnexpectedResponseException(status, response=resp).convert_exception()
 

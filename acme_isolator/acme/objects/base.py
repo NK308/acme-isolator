@@ -17,6 +17,8 @@ class AcmeUrlBase(str, ABC):
         return await self.outer_class.get_from_url(parent_object=parent, url=str(self))
 
 
+_object_register: dict[str, AcmeObject] = dict()
+
 @dataclass(order=False, kw_only=True)
 class ACME_Object(ABC):
     url: str
@@ -24,6 +26,8 @@ class ACME_Object(ABC):
 
     url_class: ClassVar[type(AcmeUrl)]
     request_return_code: ClassVar[int] = 200
+
+    hold_keys: ClassVar[set] = {"parent", "url"}  # Set of keys, not to be updated by generic update method
 
     def __init_subclass__(cls, **kwargs):
         cls.url_class = type(f"{cls.__name__}Url", (AcmeUrlBase,), dict(outer_class=cls))
@@ -35,14 +39,21 @@ class ACME_Object(ABC):
     @staticmethod
     def complete_dict(response_url: str, parent: AcmeObject | None = None, **additional_fields) -> dict:
         return dict(parent=parent, url=response_url)
+
     @classmethod
     async def get_from_url(cls, parent_object: AcmeObject, url: str, **additional_fields) -> Self:
         data, status, location = await parent_object.account.post(url=url, payload=None)
         assert status == cls.request_return_code
         data.update({"parent": parent_object, "url": url})
-        return cls(**data)
+        if url in _object_register:
+            o = _object_register[url]
+            o.update_fields(data)
+        else:
+            o = cls(**data)
+        return o
 
-    hold_keys: ClassVar[set] = {"parent"}  # Set of keys, not to be updated by generic update method
+        return o
+
 
     def update_fields(self, data: dict):
         keys = {f.name for f in fields(self)} & set(data.keys()) - self.__class__.hold_keys

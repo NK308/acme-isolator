@@ -1,4 +1,4 @@
-from .base import ACME_Object, ElementList
+from .base import ACME_Object, ElementList, _object_register
 from .descriptors import ListDescriptor, Status, StatusDescriptor, IdentifierListDescriptor
 from .exceptions import UnexpectedResponseException
 from .identifier import ACME_Identifier
@@ -57,6 +57,7 @@ class ACME_Orders(ACME_Object):
             resp.update({"url": location})
             order = ACME_Order(parent=self, **resp)
             self._order_set.add(order)
+            _object_register[location] = order
             return order
         except AssertionError:
             raise UnexpectedResponseException(status, response=resp).convert_exception()
