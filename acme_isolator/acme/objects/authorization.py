@@ -1,8 +1,8 @@
-from .base import ACME_Object, ElementList, ClassVar, StatusDescriptor
+from .base import ACME_Object, ElementList, StatusDescriptor
 from enum import Enum
 from .challenge import ACME_Challenge
 from .identifier import ACME_Identifier, IdentifierDescriptor
-from dataclasses import dataclass, field, InitVar
+from dataclasses import dataclass, field
 
 
 class AuthorizationStatus(Enum):
@@ -21,9 +21,6 @@ class ACME_Authorization(ACME_Object):
     expires: str | None
     challenges: list[ACME_Challenge] | list[dict]
     wildcard: bool | None
-
-    def __post_init__(self, identifier: dict):
-        self.identifier = ACME_Identifier.parse(identifier)
 
     #TODO translate challanges from json to objects
 

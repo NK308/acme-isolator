@@ -1,7 +1,7 @@
-from .base import ACME_Object, ElementList, ClassVar, StatusDescriptor, ListDescriptor
+from .base import ACME_Object, ElementList, StatusDescriptor, ListDescriptor
 from enum import Enum
 from .exceptions import UnexpectedResponseException
-from .identifier import ACME_Identifier, IdentifierDescriptor
+from .identifier import ACME_Identifier, IdentifierListDescriptor
 from .authorization import ACME_Authorization, ACME_Authorizations
 from dataclasses import dataclass, field, InitVar
 from asyncio import gather, create_task
@@ -20,16 +20,12 @@ class ACME_Order(ACME_Object):
     status: OrderStatus = field(default=StatusDescriptor(OrderStatus))
     expires: str | None = None
     authorizations: ACME_Authorizations = field(default=ListDescriptor(ACME_Authorizations))
-    identifiers: list[ACME_Identifier]
-    identifiers: InitVar[list[dict]]
+    identifiers: list[ACME_Identifier] = field(default=IdentifierListDescriptor())
     notBefore: str | None = None
     notAfter: str | None = None
     error: dict | None = None
     finalize: str
     certificate: str | None = None
-
-    def __post_init__(self,identifiers: list[dict]):
-        self.identifiers = [ACME_Identifier.parse(identifier) for identifier in identifiers]
 
     # TODO finalize order
 
