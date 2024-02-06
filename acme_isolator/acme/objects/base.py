@@ -58,57 +58,6 @@ class ACME_Object(ABC):
     #    ** kwargs       self.update_fields(data)
 
 
-class AcmeDescriptor:
-    def __init__(self, subclass: type):
-        if issubclass(subclass, ACME_Object):
-            self.type = subclass
-        else:
-            raise ValueError("Type has to be a subclass of ACME_Object")
-
-    def __set_name__(self, owner, name):
-        self.name = name
-
-    def __get__(self, instance, insttype = None):
-        return instance.__dict__[self.name]
-
-    def __set__(self, instance, value):
-        if value is self:
-            raise ValueError(f"Field {self.name} has not been provided to __init__ of {self.type}.")
-        if isinstance(instance.__dict__.get(self.name, None), self.type):
-            if isinstance(value, str):
-                if not instance.__dict__[self.name].url == str(value):
-                    raise NotImplementedError(f"URL from object has changed from {instance.__dict__[self.name].url} to {value}.")  # TODO maybe handle change of acme object after update from server
-            elif type(value) is self.type:
-                if not instance.__dict__[self.name].url == value.url:
-                    raise NotImplementedError(f"URL from object has changed from {instance.__dict__[self.name].url} to {value.url}.")  # TODO maybe handle change of acme object after update from server
-            else:
-                raise ValueError(f"Field can only take vales of the types str | {self.type.__name__} | {self.type.url_class.__name__}")
-        else:
-            if type(value) is str:
-                instance.__dict__[self.name] = self.type.url_class(value)
-            elif type(value) is self.type.url_class or type(value) is self.type:
-                instance.__dict__[self.name] = value
-            else:
-                raise ValueError(f"Field can only take vales of the types str | {self.type.__name__} | {self.type.url_class.__name__} and not of type {type(value).__name__}.")
-
-
-class StatusDescriptor:
-    def __init__(self, enumType: type, name = "status"):
-        self.type = enumType
-        self.name = "status"
-
-    def __set__(self, instance, value):
-        if type(value) is str:
-            instance.__dict__[self.name] = self.type(value)
-        elif type(value) is self.type:
-            instance.__dict__[self.name] = value
-        else:
-            raise ValueError(f"Type {type(value).__name__} not supported for field {self.name}.")
-
-    def __get__(self, instance, owner):
-        return instance.__dict__[self.name]
-
-
 @dataclass(order=False, kw_only=False)
 class ElementList(Generic[AcmeElement], MutableSet, ABC):
     items: InitVar[list[AcmeElement | AcmeUrl | str] | None]
@@ -208,30 +157,3 @@ class ElementList(Generic[AcmeElement], MutableSet, ABC):
                 if isinstance(element, ACME_Object):
                     tasks.append(element.get_update())
             await gather(*tasks)
-
-
-class ListDescriptor:
-    def __init__(self, subclass: type):
-        if issubclass(subclass, ElementList):
-            self.type = subclass
-        else:
-            raise ValueError("Type has to be a subclass of ElementList")
-
-    def __get__(self, instance, owner):
-        if self.name in instance.__dict__.keys():
-            l = instance.__dict__[self.name]
-        else:
-            l = self.type([], parent=instance)
-            instance.__dict__[self.name] = l
-            return l
-    def __set__(self, instance, value):
-        if self.name not in instance.__dict__.keys():
-            if type(value) is self.type:
-                instance.__dict__[self.name] = value
-            elif type(value) is list:
-                instance.__dict__[self.name] = self.type(value, parent=instance)
-        else:
-            raise NotImplementedError  # TODO has this to be implemented or should it be an error?
-
-    def __set_name__(self, owner, name):
-        self.name = name

@@ -1,13 +1,13 @@
-from .base import ACME_Object, ElementList, StatusDescriptor, ListDescriptor
-from enum import Enum
+from .base import ACME_Object, ElementList
+from .descriptors import ListDescriptor, Status, StatusDescriptor, IdentifierListDescriptor
 from .exceptions import UnexpectedResponseException
-from .identifier import ACME_Identifier, IdentifierListDescriptor
+from .identifier import ACME_Identifier
 from .authorization import ACME_Authorization, ACME_Authorizations
 from dataclasses import dataclass, field, InitVar
 from asyncio import gather, create_task
 
 
-class OrderStatus(Enum):
+class OrderStatus(Status):
     ORDER_PENDING = "pending"
     ORDER_READY = "ready"
     ORDER_PROCESSING = "processing"

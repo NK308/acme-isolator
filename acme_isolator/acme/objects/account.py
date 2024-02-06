@@ -1,8 +1,8 @@
 import json
-from enum import Enum
 
 from .exceptions import UnexpectedResponseException, ACME_ProblemException
-from .base import ACME_Object, ClassVar, AcmeObject, AcmeDescriptor, StatusDescriptor
+from .base import ACME_Object, ClassVar, AcmeObject
+from .descriptors import AcmeDescriptor, Status, StatusDescriptor
 from dataclasses import dataclass, field
 from .order import ACME_Orders
 from ..request.session import Session
@@ -11,7 +11,7 @@ from jwcrypto.jwk import JWK
 import sys
 
 
-class AccountStatus(Enum):
+class AccountStatus(Status):
     ACCOUNT_VALID = "valid"
     ACCOUNT_DEACTIVATED = "deactivated"
     ACCOUNT_REVOKED = "revoked"

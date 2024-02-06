@@ -1,11 +1,11 @@
-from .base import ACME_Object, ElementList, StatusDescriptor
-from enum import Enum
+from .base import ACME_Object, ElementList
+from .descriptors import Status, StatusDescriptor, IdentifierDescriptor
 from .challenge import ACME_Challenge
-from .identifier import ACME_Identifier, IdentifierDescriptor
+from .identifier import ACME_Identifier
 from dataclasses import dataclass, field
 
 
-class AuthorizationStatus(Enum):
+class AuthorizationStatus(Status):
     AUTHORIZATION_PENDING = "pending"
     AUTHORIZATION_VALID = "valid"
     AUTHORIZATION_INVALID = "invalid"
