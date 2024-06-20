@@ -7,6 +7,10 @@ from ..request.constants import USER_AGENT
 
 @dataclass(order=False, kw_only=True)
 class ACME_Directory(ACME_Object):
+    """
+    Representation of a directory resource, as defined in RFC 8555 section 7.1.1.
+    This class doesn't do much, besides containing URLs.
+    """
     newNonce: str
     newAccount: str
     newOrder: str
@@ -26,6 +30,14 @@ class ACME_Directory(ACME_Object):
 
     @classmethod
     async def get_directory(cls, url: str):
+        """
+        Factory for fetching a directory resource and creating an `ACME_Directory` from it.
+        This subclass of `ACME_Object` has it's own implementation of a factory, since it doesn't have to be related to an account.
+        :param url: URL of the directory resource to fetch
+        :ptype url: str
+        :return: Object created from the server's response.
+        :rtype: ACME_Directory
+        """
         async with request("GET", url, headers={"User-Agent": USER_AGENT}) as resp:
             j = await resp.json(encoding="utf-8")
             if not resp.status == 200:

@@ -2,6 +2,9 @@ from ..base import ACME_Object, ElementList
 
 
 class AcmeDescriptor:
+    """
+    Descriptor for `ACME_Object` and it's subclasses, to make it easy to define fields, which can either be assigned an instance of a specific `ACME_Object` subclass or alternatively it's corresponding `AcmeUrl` class, or an URL in form of a simple `str`, which is then automatically converted to the URL class.
+    """
     def __init__(self, subclass: type):
         if issubclass(subclass, ACME_Object):
             self.type = subclass

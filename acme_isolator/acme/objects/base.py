@@ -21,6 +21,21 @@ _object_register: dict[str, AcmeObject] = dict()
 
 @dataclass(order=False, kw_only=True)
 class ACME_Object(ABC):
+    """
+    Base class for objects that represent a resource on the ACME server.
+    Can be constructed by requesting the data from the resource URL. Holds a reference to the URL, from which it has been constructed.
+
+    :ivar url: `AcmeUrl` subclass instance of the URL of the resource on the server, which is mirrored by this object.
+    :vartype url: AcmeUrl
+    :cvar url_class: Class object of the `AcmeUrl` subclass which is related to this (sub)class  of `ACME_Object`.
+    :vartype url_class: Class
+    :ivar parent: Parent object
+    :vartype parent: Acme_Object
+    :ivar account: Account, to which this resource belongs.
+    :vartype account: ACME_Account
+    :cvar request_return_code: By default expected return code when  fetching the current state of the object from the server. Defaults to 200.
+    :vartype request_return_code: int
+    """
     url: str
     parent: Union["ACME_Object", None]
 
@@ -42,6 +57,15 @@ class ACME_Object(ABC):
 
     @classmethod
     async def get_from_url(cls, parent_object: AcmeObject, url: str, **additional_fields) -> Self:
+        """
+        Factory method, to construct a new instance from URL, by sending a request to the server and parsing the response.
+
+        :param parent_object: Parent of the requested object.
+        :ptype parent_object: AcmeObject
+        :param url: Resouerce URL on the server.
+        :param additional_fields:
+        :rtype: ACME_Object
+        """
         data, status, location = await parent_object.account.post(url=url, payload=None)
         assert status == cls.request_return_code
         data.update({"parent": parent_object, "url": url})
@@ -55,6 +79,12 @@ class ACME_Object(ABC):
 
 
     def update_fields(self, data: dict):
+        """
+        Update the object's fields with data from a dictionary, ommitting entries which are not defined as part of the class.
+
+        :param data: Dictionary with keys having some intersection with the set of fields available to the object.
+        :ptype data: dict
+        """
         keys = {f.name for f in fields(self)} & set(data.keys()) - self.__class__.hold_keys
         for key in keys:
             if key in self.__class__.__dict__.keys():
