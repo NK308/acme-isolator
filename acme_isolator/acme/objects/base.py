@@ -52,7 +52,6 @@ class ACME_Object(ABC):
             o = cls(**data)
         return o
 
-        return o
 
 
     def update_fields(self, data: dict):
