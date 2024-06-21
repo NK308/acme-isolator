@@ -100,6 +100,17 @@ class ACME_Object(ABC):
 
 @dataclass(order=False, kw_only=False)
 class ElementList(Generic[AcmeElement], MutableSet, ABC):
+    """
+    Abstract `MutableSet` class to contain objects representing a specific type of resource, able to handle them as `ACME_Object` subclass instances, or their respective URL class.
+    While comparing an object to elements from the set, they are compared by their URLs.
+    Trying to add a resource that is already contained in the set can "upgrade" the element by replacing it, if the new object is an instance of `ACME_Object`, while the already contained element is an `AcmeUrl`.
+    This class also provides methods to iterate though all elements, fetch their updated data from the server and update the elements accordingly.
+
+    :ivar parent: Object, which has to contain this "list" of resources, according to RFC 8555.
+    :vartype parent: ACME_Object
+    :cvar content_type: Subclass of `ACME_Object`, that represents the resource, which is contained by this class. Set while subclassing `ElementList`
+    :vartype content_type: Class
+    """
     items: InitVar[list[AcmeElement | AcmeUrl | str] | None]
     _list: list[AcmeElement | AcmeUrl] = field(init=False, default_factory=list)
     parent: AcmeObject = field(kw_only=True)
@@ -119,6 +130,14 @@ class ElementList(Generic[AcmeElement], MutableSet, ABC):
             url = value.url
         elif type(value) is self.content_type.url_class:
             url = str(value)
+        """
+        Check, if a object representation of a resource is already in the list, not matter if it is derived from `ACME_Object` or from `AcmeUrl`, by comparing the URLs of the objects.
+
+        :param value: The object of the resource to find in the list.
+        :ptype value: `content_type` | `content_type.url_class` | `str`
+        :return: Index of the object, found inside of the list, or `None` if it isn't found in the list.
+        :rtype: int | None
+        """
         else:
             return None
         for i in range(len(self._list)):
@@ -141,6 +160,13 @@ class ElementList(Generic[AcmeElement], MutableSet, ABC):
 
     def add(self, value):
         if value not in self:
+        """
+        Add new object to the list. Since this class mostly behaves like a `set`, it can not contain a resource (identified by it's URL) more than once.
+        If a resource is already contained represented by it's `AcmeUrl` object, and the new object is the same resoure, but represented as `ACME_Object`, the element in the list gets replaced, but not the other way round.
+
+        :param value: New element to add to the list.
+        :ptype value: `content_type` | `content_type.url_class`
+        """
             if type(value) is self.content_type or value in self and type(value) is self.content_type:
                 self._list.append(value)
             elif type(value) is str:
@@ -176,9 +202,20 @@ class ElementList(Generic[AcmeElement], MutableSet, ABC):
         return self.parent
 
     async def request_element(self, element: AcmeUrl) -> AcmeElement:
+        """
+        Request object from URL and set corerct parent.
+
+        :param element: URL of the requested object
+        :ptype element: `content_type.url_class`
+        :return: Object generated from the server's response
+        :rtype: `content_type`
+        """
         return await element.outer_class.get_from_url(parent_object=self._get_parent(), url=element)
 
     async def request_all_elements(self):
+        """
+        Request all resources, which are currently only contained as `content_type.url_class`, generate the corresponding `content_type` objects and replace them in the container.
+        """
         with self.list_lock:
             temp_list = list()
             todo: list[Coroutine] = list()
@@ -191,6 +228,9 @@ class ElementList(Generic[AcmeElement], MutableSet, ABC):
             self._list = temp_list + list(new_elements)
 
     async def update_all_elements(self):
+        """
+        Request all resources, which are contained as `content_type` objects and update them.
+        """
         with self.list_lock:
             tasks: list[Coroutine] = list()
             for element in self._list:
