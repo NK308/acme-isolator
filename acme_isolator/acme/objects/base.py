@@ -162,7 +162,6 @@ class ElementList(Generic[AcmeElement], MutableSet, ABC):
         return len(self._list)
 
     def add(self, value):
-        if value not in self:
         """
         Add new object to the list. Since this class mostly behaves like a `set`, it can not contain a resource (identified by it's URL) more than once.
         If a resource is already contained represented by it's `AcmeUrl` object, and the new object is the same resoure, but represented as `ACME_Object`, the element in the list gets replaced, but not the other way round.
@@ -170,6 +169,7 @@ class ElementList(Generic[AcmeElement], MutableSet, ABC):
         :param value: New element to add to the list.
         :ptype value: `content_type` | `content_type.url_class`
         """
+        if value not in self:
             if type(value) is self.content_type or value in self and type(value) is self.content_type:
                 self._list.append(value)
             elif type(value) is str:

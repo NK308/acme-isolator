@@ -21,11 +21,11 @@ class ACME_Directory(ACME_Object):
     newAuthz: str = None
     parent: ACME_Object | None = field(default=None)
 
-    def __post_init__(self, meta):
+    def __post_init__(self, meta): # TODO this seems like a relict and should be checked for removal
         if meta is not None and "website" in meta:
             self.website = meta["website"]
 
-    def __iter__(self):
+    def __iter__(self): # TODO this seems like a relict and should be checked for removal
         return iter({k: v for (k, v) in self.__dict__.items() if k in {"newNonce", "newAccount", "newOrder", "newAuthz", "revokeCert", "keyChange"} and v is not None}.items())
 
     @classmethod
