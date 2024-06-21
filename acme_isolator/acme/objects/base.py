@@ -13,6 +13,10 @@ ACME_Account = TypeVar("ACME_Account", bound="ACME_Object")
 class AcmeUrlBase(str, ABC):
     outer_class: ClassVar[type(AcmeObject)]
 
+    @property
+    def url(self) -> str:
+        return str(self)
+
     async def request_object(self, parent: AcmeObject) -> AcmeObject:
         return await self.outer_class.get_from_url(parent_object=parent, url=str(self))
 
@@ -126,10 +130,6 @@ class ElementList(Generic[AcmeElement], MutableSet, ABC):
             self.add(element)
 
     def __find_element(self, value) -> int | None:
-        if type(value) is self.content_type:
-            url = value.url
-        elif type(value) is self.content_type.url_class:
-            url = str(value)
         """
         Check, if a object representation of a resource is already in the list, not matter if it is derived from `ACME_Object` or from `AcmeUrl`, by comparing the URLs of the objects.
 
@@ -138,14 +138,17 @@ class ElementList(Generic[AcmeElement], MutableSet, ABC):
         :return: Index of the object, found inside of the list, or `None` if it isn't found in the list.
         :rtype: int | None
         """
+        if type(value) in [str, self.content_type, self.content_type.url_class]:
+            if type(value) is self.content_type:
+                url = value.url
+            else:
+                url = value
+            for i in range(len(self._list)):
+                e = self._list[i]
+                if e.url == url:
+                    return i
         else:
-            return None
-        for i in range(len(self._list)):
-            e = self._list[i]
-            if type(e) is self.content_type and url == e.url:
-                return i
-            elif type(e) is self.content_type.url_class and url == str(e):
-                return i
+            raise TypeError(f"Tried to look for type {type(value)} but only {self.content_type} and {self.content_type.url_class} are allowed.")
         return None
 
 
