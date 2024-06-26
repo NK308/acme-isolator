@@ -43,6 +43,7 @@ class ACME_Object(ABC):
     url: str
     parent: Union["ACME_Object", None]
 
+    _lock: Lock = field(init=False, default_factory=Lock)
     url_class: ClassVar[type(AcmeUrl)]
     request_return_code: ClassVar[int] = 200
 
@@ -89,12 +90,17 @@ class ACME_Object(ABC):
         :param data: Dictionary with keys having some intersection with the set of fields available to the object.
         :ptype data: dict
         """
-        keys = {f.name for f in fields(self)} & set(data.keys()) - self.__class__.hold_keys
-        for key in keys:
-            if key in self.__class__.__dict__.keys():
-                self.__class__.__dict__[key].__set__(self, data[key])
-            else:
-                self.__dict__[key] = data[key]
+        if not self._lock.locked():
+            async with self._lock:
+                keys = {f.name for f in fields(self)} & set(data.keys()) - self.__class__.hold_keys
+                for key in keys:
+                    if key in self.__class__.__dict__.keys():
+                        self.__class__.__dict__[key].__set__(self, data[key])
+                    else:
+                        self.__dict__[key] = data[key]
+        else:
+            async with self._lock:
+                pass
 
     async def get_update(self):  # TODO maybe adding an recursive option probably has to be combined with lock
         data, status, location = await self.account.post(url=self.url, payload=None)
