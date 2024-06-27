@@ -27,11 +27,13 @@ class ACME_Order(ACME_Object):
     finalize: str
     certificate: str | None = None
 
-    # TODO finalize order
+    async def finalization_request(self, *args, **kwargs):  # TODO Implement methid for finalizing the order, after class for CSR is defined
+        raise NotImplementedError
 
 
 class OrderSet(ElementList[ACME_Order]):
     pass
+
 
 @dataclass
 class ACME_Orders(ACME_Object):

@@ -1,6 +1,6 @@
 from .base import ACME_Object, ElementList
-from .descriptors import Status, StatusDescriptor, IdentifierDescriptor
-from .challenge import ACME_Challenge
+from .descriptors import Status, StatusDescriptor, IdentifierDescriptor, ListDescriptor
+from .challenge import ACME_Challenge, ACME_Challenges
 from .identifier import ACME_Identifier
 from dataclasses import dataclass, field
 
@@ -19,7 +19,7 @@ class ACME_Authorization(ACME_Object):
     identifier: ACME_Identifier = field(default=IdentifierDescriptor())
     status: AuthorizationStatus = field(default=StatusDescriptor(AuthorizationStatus))
     expires: str | None
-    challenges: list[ACME_Challenge] | list[dict]
+    challenges: ACME_Challenges = field(default=ListDescriptor(ACME_Challenges))
     wildcard: bool | None
 
     async def deactivate(self):

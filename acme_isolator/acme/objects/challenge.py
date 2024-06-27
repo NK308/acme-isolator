@@ -1,4 +1,4 @@
-from .base import ACME_Object, ClassVar
+from .base import ACME_Object, ClassVar, ElementList
 from .exceptions import ACME_ProblemException
 from .descriptors import Status, StatusDescriptor
 from abc import ABC
@@ -35,6 +35,11 @@ class ACME_Challenge(ACME_Object):
     def keyAuthorization(self) -> str:
         #TODO implement rfc7638
         pass
+
+
+@dataclass
+class ACME_Challenges(ElementList[ACME_Challenge]):
+    pass
 
 
 class ACME_Challenge_dns_01(ACME_Challenge):
