@@ -3,6 +3,7 @@ from .descriptors import ListDescriptor, Status, StatusDescriptor, IdentifierLis
 from .exceptions import UnexpectedResponseException
 from .identifier import ACME_Identifier
 from .authorization import ACME_Authorization, ACME_Authorizations
+from cryptography.x509 import CertificateSigningRequest, DNSName, SubjectAlternativeName
 from dataclasses import dataclass, field, InitVar
 from asyncio import gather, create_task
 
@@ -27,8 +28,20 @@ class ACME_Order(ACME_Object):
     finalize: str
     certificate: str | None = None
 
-    async def finalization_request(self, *args, **kwargs):  # TODO Implement methid for finalizing the order, after class for CSR is defined
+    async def finalization_request(self, csr: CertificateSigningRequest):  # TODO Implement methid for finalizing the order, after class for CSR is defined
         raise NotImplementedError
+
+    def check_csr(self, csr: CertificateSigningRequest) -> bool:
+        identifiers = set(self.identifiers)
+        for a in csr.extensions.get_extension_for_class(SubjectAlternativeName).get_values_for_type(DNSName):
+            for b in identifiers:
+                if b == a:
+                    c = b
+                    break
+            else:
+                return False
+            identifiers.remove(c)
+        return len(identifiers) == 0
 
 
 class OrderSet(ElementList[ACME_Order]):

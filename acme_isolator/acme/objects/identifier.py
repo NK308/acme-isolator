@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import ClassVar
+from cryptography.x509 import DNSName
 
 _identifier_register = dict()
 
@@ -32,3 +33,9 @@ class ACME_Identifier:
 class ACME_Identifier_DNS(ACME_Identifier):
     type: ClassVar[str] = "dns"
     type: str = "dns"
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__) or isinstance(other, DNSName):
+            return self.value == other.value
+        else:
+            raise NotImplementedError
