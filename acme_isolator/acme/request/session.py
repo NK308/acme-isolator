@@ -5,7 +5,7 @@ from aiohttp import ClientSession, ClientResponseError
 from asyncio import gather
 from urllib.parse import urlparse
 from ..objects.exceptions import UnexpectedResponseException, BadNonceException
-from .jws import JwsBase
+from .jws import JwsBase, JwsKid
 from ..objects.directory import ACME_Directory
 from .constants import USER_AGENT
 
@@ -69,6 +69,35 @@ class Session:
                     data = await resp.json()
                 new_nonce = resp.headers["Replay-Nonce"]
                 self.nonce_pool.put_nonce(new_nonce)
+
+                next_url = resp.links.get("next", None)
+                while next_url is not None:
+                    extracted_properties = {"key": request.key, "url": next_url, "payload": b""}
+                    if isinstance(request, JwsKid):
+                        extracted_properties["kid"] = request.kid
+                    next_request = request.__class__(**extracted_properties)
+                    session = await self.check_session(next_url)
+                    next_payload = next_request.build(await self.nonce_pool.get_nonce())
+                    async with session.post(url=next_url, data=next_payload, headers={"Content-Type": "application/jose+json"}) as next_resp:
+                        assert next_resp.status < 400, "code"
+                        if empty_response:
+                            data = None
+                        else:
+                            assert not next_resp.headers["Content-Type"] == "application/problem+json", "header"
+                            new_data = await next_resp.json()
+                        new_nonce = next_resp.headers["Replay-Nonce"]
+                        self.nonce_pool.put_nonce(new_nonce)
+                        next_url = next_resp.links.get("next", None)
+                        for key in new_data.keys():
+                            if key in data.keys() and type(new_data[key]) == list and type(data[key] ) == list:
+                                data[key] += new_data[key]
+                            elif key == "meta":
+                                pass
+                            elif key not in data.keys():
+                                data[key] = new_data[key]
+                            else:
+                                raise NotImplementedError(f"Case of key '{key} existing in old and new dict, and having types {type(data[key])} and {type(new_data[key])} not covered.")
+
                 return data, resp.status, resp.headers.get("Location", None)
             except KeyError as e:
                 print(resp.status, file=sys.stderr)
