@@ -76,14 +76,14 @@ class ACME_Object(ABC):
         data.update({"parent": parent_object, "url": url})
         if url in _object_register:
             o = _object_register[url]
-            o.update_fields(data)
+            await o.update_fields(data)
         else:
             o = cls(**data)
         return o
 
 
 
-    def update_fields(self, data: dict):
+    async def update_fields(self, data: dict):
         """
         Update the object's fields with data from a dictionary, ommitting entries which are not defined as part of the class.
 

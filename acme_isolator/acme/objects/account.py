@@ -71,7 +71,7 @@ class ACME_Account(ACME_Object):
             data.update({"key": key, "url": location})
             if location in _object_register:
                 o = _object_register[location]
-                o.update_fields(data)
+                await o.update_fields(data)
             else:
                 o = ACME_Account(session=session, **data)
             return o
@@ -90,7 +90,7 @@ class ACME_Account(ACME_Object):
             data.update({"key": key, "url": location})
             if location in _object_register:
                 o = _object_register[location]
-                o.update_fields(data)
+                await o.update_fields(data)
             else:
                 o = ACME_Account(session=session, **data)
             return o
@@ -105,7 +105,7 @@ class ACME_Account(ACME_Object):
         try:
             resp, status, location = await self.post(url=self.url, payload=updated_payload)
             assert status == 200
-            self.update_fields(resp)
+            await self.update_fields(resp)
             # TODO check if account url has to be updated
         except AssertionError as e:
             raise UnexpectedResponseException(status, response=resp).convert_exception()

@@ -24,7 +24,7 @@ class ACME_Authorization(ACME_Object):
 
     async def deactivate(self):
         resp, code, location = await self.account.post(url=self.url, payload={"status": str(AuthorizationStatus.AUTHORIZATION_DEACTIVATED)})
-        self.update_fields(resp)
+        await self.update_fields(resp)
 
     #TODO translate challanges from json to objects
 
