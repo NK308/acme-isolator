@@ -169,8 +169,10 @@ class ElementList(Generic[AcmeElement], MutableSet, ABC):
 
     def add(self, value):
         """
-        Add new object to the list. Since this class mostly behaves like a `set`, it can not contain a resource (identified by it's URL) more than once.
-        If a resource is already contained represented by it's `AcmeUrl` object, and the new object is the same resoure, but represented as `ACME_Object`, the element in the list gets replaced, but not the other way round.
+        Add new object to the list.
+        Since this class mostly behaves like a `set`, it can not contain a resource (identified by its URL) more than once.
+        If a resource is already contained represented by its `AcmeUrl` object, and the new object is the same resource,
+        but represented as `ACME_Object`, the element in the list gets replaced, but not the other way round.
 
         :param value: New element to add to the list.
         :ptype value: `content_type` | `content_type.url_class`
@@ -212,7 +214,7 @@ class ElementList(Generic[AcmeElement], MutableSet, ABC):
 
     async def request_element(self, element: AcmeUrl) -> AcmeElement:
         """
-        Request object from URL and set corerct parent.
+        Request object from URL and set correct parent.
 
         :param element: URL of the requested object
         :ptype element: `content_type.url_class`
@@ -223,7 +225,8 @@ class ElementList(Generic[AcmeElement], MutableSet, ABC):
 
     async def request_all_elements(self):
         """
-        Request all resources, which are currently only contained as `content_type.url_class`, generate the corresponding `content_type` objects and replace them in the container.
+        Request all resources, which are currently only contained as `content_type.url_class`,
+        generate the corresponding `content_type` objects and replace them in the container.
         """
         with self.list_lock:
             temp_list = list()
