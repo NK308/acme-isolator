@@ -51,11 +51,11 @@ class ListDescriptor:
         else:
             l = self.listSubclass([], parent=instance)
             instance.__dict__[self.name] = l
-            return l
+        return l
 
     def __set__(self, instance, value):
-        if self.name not in instance.__dict__.keys():
-            if type(value) is self.listSubclass:
+        if self.name not in instance.__dict__.keys() or getattr(instance, self.name) is None:
+            if isinstance(value, self.listSubclass):
                 instance.__dict__[self.name] = value
             elif type(value) is list:
                 print(self.listSubclass, type(value), type(instance))

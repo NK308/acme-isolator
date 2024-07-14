@@ -95,10 +95,7 @@ class ACME_Object(ABC):
             async with self._lock:
                 keys = {f.name for f in fields(self)} & set(data.keys()) - self.__class__.hold_keys
                 for key in keys:
-                    if key in self.__class__.__dict__.keys():
-                        self.__class__.__dict__[key].__set__(self, data[key])
-                    else:
-                        self.__dict__[key] = data[key]
+                    setattr(self, key, data[key])
         else:
             async with self._lock:
                 pass
