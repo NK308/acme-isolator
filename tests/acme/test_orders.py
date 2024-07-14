@@ -33,3 +33,17 @@ class TestOrderCreation:
                        ACME_Identifier_DNS(value="also-not.my-domain.com")]
         order = await pebble_session.orders.create_order(identifiers=identifiers)
         assert type(order) is ACME_Order
+
+    @pytest.mark.pebble
+    @pytest.mark.asyncio
+    async def test_list_access(self, pebble_session):
+        pebble_session.orders = await pebble_session.orders.request_object(parent=pebble_session)
+        identifiers = [ACME_Identifier_DNS(value="not-my.domain.com")]
+        orders = pebble_session.orders
+        order = await orders.create_order(identifiers=identifiers)
+        assert isinstance(orders, ACME_Orders)
+        assert len(orders) == 1
+        assert type(orders._list) == list
+        for order in orders:
+            assert type(order) == ACME_Order
+
