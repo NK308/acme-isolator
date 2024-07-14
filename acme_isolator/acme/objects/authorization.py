@@ -29,6 +29,5 @@ class ACME_Authorization(ACME_Object):
     #TODO translate challanges from json to objects
 
 
-@dataclass
 class ACME_Authorizations(ElementList[ACME_Authorization]):
     pass

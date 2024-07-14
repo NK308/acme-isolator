@@ -50,6 +50,7 @@ class ACME_Object(ABC):
     hold_keys: ClassVar[set] = {"parent", "url"}  # Set of keys, not to be updated by generic update method
 
     def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__()
         cls.url_class = type(f"{cls.__name__}Url", (AcmeUrlBase,), dict(outer_class=cls))
 
     @property
@@ -108,7 +109,6 @@ class ACME_Object(ABC):
     #    ** kwargs       self.update_fields(data)
 
 
-@dataclass(order=False, kw_only=False)
 class ElementList(Generic[AcmeElement], MutableSet, ABC):
     """
     Abstract `MutableSet` class to contain objects representing a specific type of resource, able to handle them as `ACME_Object` subclass instances, or their respective URL class.
@@ -121,17 +121,20 @@ class ElementList(Generic[AcmeElement], MutableSet, ABC):
     :cvar content_type: Subclass of `ACME_Object`, that represents the resource, which is contained by this class. Set while subclassing `ElementList`
     :vartype content_type: Class
     """
-    items: InitVar[list[AcmeElement | AcmeUrl | str] | None]
-    _list: list[AcmeElement | AcmeUrl] = field(init=False, default_factory=list)
-    parent: AcmeObject = field(kw_only=True)
+    items: list[AcmeElement | AcmeUrl | str] | None
+    _list: list[AcmeElement | AcmeUrl]
+    parent: AcmeObject
 
     list_lock: Lock = field(init=False, default_factory=Lock)
     content_type: ClassVar[type(AcmeObject)]
 
     def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__()
         cls.content_type = get_args(cls.__orig_bases__[0])[0]
 
-    def __post_init__(self, items: list):
+    def __init__(self, items: list, parent: AcmeObject):
+        self.parent = parent
+        self._list = list()
         for element in items:
             self.add(element)
 
@@ -162,10 +165,10 @@ class ElementList(Generic[AcmeElement], MutableSet, ABC):
         return self.__find_element(item) is not None
 
     def __iter__(self):
-        self._list.__iter__()
+        return self._list.__iter__()
 
     def __len__(self):
-        return len(self._list)
+        return self._list.__len__()
 
     def add(self, value):
         """

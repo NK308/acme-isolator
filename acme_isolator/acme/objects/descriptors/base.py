@@ -41,7 +41,7 @@ class AcmeDescriptor:
 class ListDescriptor:
     def __init__(self, subclass: type):
         if issubclass(subclass, ElementList):
-            self.type = subclass
+            self.listSubclass = subclass
         else:
             raise ValueError("Type has to be a subclass of ElementList")
 
@@ -49,16 +49,17 @@ class ListDescriptor:
         if self.name in instance.__dict__.keys():
             l = instance.__dict__[self.name]
         else:
-            l = self.type([], parent=instance)
+            l = self.listSubclass([], parent=instance)
             instance.__dict__[self.name] = l
             return l
 
     def __set__(self, instance, value):
         if self.name not in instance.__dict__.keys():
-            if type(value) is self.type:
+            if type(value) is self.listSubclass:
                 instance.__dict__[self.name] = value
             elif type(value) is list:
-                instance.__dict__[self.name] = self.type(value, parent=instance)
+                print(self.listSubclass, type(value), type(instance))
+                instance.__dict__[self.name] = self.listSubclass(value, instance)
         else:
             raise NotImplementedError  # TODO has this to be implemented or should it be an error?
 
