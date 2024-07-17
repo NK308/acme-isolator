@@ -3,7 +3,7 @@ import pytest_asyncio
 
 from acme_isolator.acme.objects.base import AcmeUrlBase, ElementList
 from acme_isolator.acme.objects.account import ACME_Account
-from acme_isolator.acme.objects.order import ACME_Orders, ACME_Order
+from acme_isolator.acme.objects.order import ACME_Orders, ACME_Order, OrderStatus
 from acme_isolator.acme.objects.identifier import ACME_Identifier_DNS
 
 
@@ -57,3 +57,13 @@ class TestOrderCreation:
         for auth in order.authorizations:
             assert isinstance(auth, AcmeUrlBase)
 
+
+class TestOrderProperties:
+
+    @pytest.mark.pebble
+    @pytest.mark.asyncio
+    async def test_status(self, pebble_session):
+        pebble_session.orders = await pebble_session.orders.request_object(parent=pebble_session)
+        identifiers = [ACME_Identifier_DNS(value="not-my.domain.com")]
+        order = await pebble_session.orders.create_order(identifiers=identifiers)
+        assert isinstance(order.status, OrderStatus)
